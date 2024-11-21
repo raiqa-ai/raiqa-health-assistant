@@ -57,10 +57,11 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-frontend-qa
+          containerAppName: raiqa-assistant-frontend-qa-fe
           resourceGroup: raiqa-health-qa-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
-
+          containerAppEnvironment: raiqa-health-qa-env  # Add your actual environment name from infra config
+          registryUrl: ${{ env.REGISTRY }}
   deploy-uat:
     needs: build-and-push
     if: startsWith(github.ref, 'refs/heads/release/uat')
