@@ -8,7 +8,19 @@ class CollectorApi {
   constructor() {
     const { CommunicationKey } = require("../comKey");
     this.comkey = new CommunicationKey();
-    this.endpoint = `http://0.0.0.0:${process.env.COLLECTOR_PORT || 8888}`;
+    
+    // Default for local development only
+    const defaultEndpoint = process.env.NODE_ENV === "development" 
+      ? `http://0.0.0.0:${process.env.COLLECTOR_PORT || '8888'}`
+      : null;
+    
+    this.endpoint = process.env.COLLECTOR_ENDPOINT || defaultEndpoint;
+    
+    if (!this.endpoint) {
+      throw new Error('COLLECTOR_ENDPOINT environment variable must be set in non-development environments');
+    }
+    
+    this.log(`Collector endpoint configured as: ${this.endpoint}`);  
   }
 
   log(text, ...args) {

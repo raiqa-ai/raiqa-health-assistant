@@ -8,7 +8,7 @@ generator client {
 //
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://retraced:password@localhost:5432/raiqaAssistant"
+  url      = "postgresql://postgres:password@localhost:5432/raiqaAssistant"
 }
 // datasource db {
 //   provider = "sqlite"
