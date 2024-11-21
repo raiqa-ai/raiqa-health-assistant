@@ -1,0 +1,99 @@
+name: Frontend Build and Deploy
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-deploy.yml'
+
+env:
+  REGISTRY: raiqahealthacr.azurecr.io
+  IMAGE_NAME: raiqa-assistant-frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate version
+        id: version
+        run: echo "version=$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+      
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Login to ACR
+        run: az acr login --name raiqahealthacr
+          
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+
+  deploy-qa:
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/heads/release/qa')
+    runs-on: ubuntu-latest
+    environment: qa
+    
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: raiqa-assistant-frontend-qa
+          resourceGroup: raiqa-health-qa-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+
+  deploy-uat:
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/heads/release/uat')
+    runs-on: ubuntu-latest
+    environment: uat
+    
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: raiqa-assistant-frontend-uat
+          resourceGroup: raiqa-health-uat-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+
+
+  deploy-prod:
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/heads/release/prod')
+    runs-on: ubuntu-latest
+    environment: prod
+    
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: raiqa-assistant-frontend-prod
+          resourceGroup: raiqa-health-prod-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
