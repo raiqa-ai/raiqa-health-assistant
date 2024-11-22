@@ -1,0 +1,101 @@
+name: Server Build and Deploy
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    paths:
+      - 'server/**'
+      - '.github/workflows/server-deploy.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: raiqahealthacr.azurecr.io
+  IMAGE_NAME: raiqa-assistant-server
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate version
+        id: version
+        run: echo "version=$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
+      
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+          
+      - name: Login to ACR
+        run: az acr login --name raiqahealthacr
+          
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+
+  deploy-qa:
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/heads/release/qa')
+    runs-on: ubuntu-latest
+    environment: qa
+    
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+          
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: raiqa-health-assistant-qa-server
+          resourceGroup: raiqa-health-qa-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-qa-env
+          registryUrl: ${{ env.REGISTRY }}
+
+  deploy-uat:
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/heads/release/uat')
+    runs-on: ubuntu-latest
+    environment: uat
+    
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: raiqa-assistant-server-uat
+          resourceGroup: raiqa-health-uat-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+
+  deploy-prod:
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/heads/release/prod')
+    runs-on: ubuntu-latest
+    environment: prod
+    
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
+      - name: Deploy to Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: raiqa-assistant-server-prod
+          resourceGroup: raiqa-health-prod-rg
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
