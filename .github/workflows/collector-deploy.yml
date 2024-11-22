@@ -56,12 +56,12 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-health-assistant-qa-collector
+          containerAppName: raiqa-health-assistant-qa-coll
           resourceGroup: raiqa-health-qa-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
           containerAppEnvironment: raiqa-health-qa-env
           registryUrl: ${{ env.REGISTRY }}
-          
+
   deploy-uat:
     needs: build-and-push
     if: startsWith(github.ref, 'refs/heads/release/uat')
