@@ -1,7 +1,7 @@
 FROM ubuntu:jammy-20240627.1
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y curl && \
+    apt-get install -y curl cifs-utils && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn && \
