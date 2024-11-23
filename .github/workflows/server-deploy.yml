@@ -33,11 +33,6 @@ jobs:
           
       - name: Login to ACR
         run: az acr login --name raiqahealthacr
-
-      - name: Generate Prisma Client
-        run: |
-          npm install
-          npx prisma generate
           
       - name: Build and push image
         uses: docker/build-push-action@v5
