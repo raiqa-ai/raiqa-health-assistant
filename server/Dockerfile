@@ -18,6 +18,14 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
+# Create necessary directories and set permissions during build
+RUN mkdir -p /app/server/storage/documents \
+    /app/server/storage/vector-cache \
+    /app/server/storage/lancedb \
+    /app/server/storage/assets/pfp && \
+    touch /app/server/storage/raiqaAssistant.db && \
+    chown -R raiqaAssistant:raiqaAssistant /app
+
 # Create startup script with more detailed diagnostics
 RUN echo '#!/bin/bash\n\
 set -e\n\
@@ -26,14 +34,6 @@ echo "=== System Information ==="\n\
 date\n\
 id\n\
 echo\n\
-\n\
-echo "=== Pre-start Directory Check ==="\n\
-# Try to create directories if they do not exist\n\
-mkdir -p /app/server/storage/documents || true\n\
-mkdir -p /app/server/storage/vector-cache || true\n\
-mkdir -p /app/server/storage/lancedb || true\n\
-mkdir -p /app/server/storage/assets/pfp || true\n\
-touch /app/server/storage/raiqaAssistant.db || true\n\
 \n\
 echo "=== Directory Structure ==="\n\
 ls -la /app/server/storage || true\n\
