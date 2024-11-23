@@ -18,6 +18,9 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
+# Generate Prisma client
+RUN npx prisma generate
+
 # Create necessary directories and set permissions during build
 RUN mkdir -p /app/server/storage/documents \
     /app/server/storage/vector-cache \
