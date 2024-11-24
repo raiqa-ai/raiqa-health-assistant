@@ -31,6 +31,7 @@ const System = {
       .catch(() => 0);
   },
   keys: async function () {
+    console.log('keys API BASE is:', `${API_BASE}/setup-complete`);
     return await fetch(`${API_BASE}/setup-complete`)
       .then((res) => {
         if (!res.ok) throw new Error("Could not find setup information.");
@@ -345,6 +346,7 @@ const System = {
     return { appName: customAppName, error: null };
   },
   fetchLogo: async function () {
+    console.log('fetchLogo API BASE is:', `${API_BASE}/system/logo`);
     return await fetch(`${API_BASE}/system/logo`, {
       method: "GET",
       cache: "no-cache",
