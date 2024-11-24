@@ -22,7 +22,11 @@ export default defineConfig({
     host: "0.0.0.0"
   },
   define: {
-    "process.env": process.env
+    "process.env": process.env,
+    'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE),
+    'process.env': {
+      VITE_API_BASE: JSON.stringify(process.env.VITE_API_BASE)
+    }
   },
   css: {
     postcss
