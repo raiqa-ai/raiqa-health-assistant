@@ -23,10 +23,7 @@ export default defineConfig({
   },
   define: {
     "process.env": process.env,
-    'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE),
-    'process.env': {
-      VITE_API_BASE: JSON.stringify(process.env.VITE_API_BASE)
-    }
+    'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE)
   },
   css: {
     postcss
