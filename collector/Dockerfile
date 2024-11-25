@@ -13,22 +13,17 @@ RUN groupadd -r raiqaAssistant && \
     useradd -r -g raiqaAssistant -d /app raiqaAssistant
 
 WORKDIR /app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
 
-COPY . .
-
-# Create necessary directories and set permissions during build
-RUN mkdir -p /app/collector/hotdir/documents \
-    /app/collector/hotdir/vector-cache \
-    /app/collector/hotdir/lancedb \
-    /app/collector/hotdir/comkey && \
-    touch /app/collector/hotdir/raiqaAssistant.db && \
-    chown -R raiqaAssistant:raiqaAssistant /app
-
-# Create startup script with diagnostics
+# Create startup script that handles directory creation and permissions
 RUN echo '#!/bin/bash\n\
 set -e\n\
+\n\
+# Create directories if they dont exist\n\
+mkdir -p /app/collector/hotdir/documents\n\
+mkdir -p /app/collector/hotdir/vector-cache\n\
+mkdir -p /app/collector/hotdir/lancedb\n\
+mkdir -p /app/collector/hotdir/comkey\n\
+touch /app/collector/hotdir/raiqaAssistant.db\n\
 \n\
 echo "=== System Information ==="\n\
 date\n\
@@ -56,6 +51,12 @@ exec yarn start\n\
 ' > /startup.sh
 
 RUN chmod +x /startup.sh
+
+# Copy and install application
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+COPY . .
 
 USER raiqaAssistant
 ENV NODE_ENV=production
