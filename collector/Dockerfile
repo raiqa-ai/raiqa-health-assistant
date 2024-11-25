@@ -7,10 +7,21 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     npm install -g yarn && \
     rm -rf /var/lib/apt/lists/*
 
+# Create raiqaAssistant user and group
+RUN groupadd -r raiqaAssistant && \
+    useradd -r -g raiqaAssistant -d /app raiqaAssistant
+
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 COPY . .
+
+# Set proper ownership
+RUN chown -R raiqaAssistant:raiqaAssistant /app
+
+# Switch to raiqaAssistant user
+USER raiqaAssistant
+
 ENV NODE_ENV=production
 CMD ["yarn", "start"]
