@@ -12,16 +12,21 @@ RUN groupadd -r raiqaAssistant && \
     useradd -r -g raiqaAssistant -d /app raiqaAssistant
 
 WORKDIR /app
+
+# Create collector-specific directories
+RUN mkdir -p /app/collector/hotdir/{comkey,documents,vector-cache,lancedb} && \
+    touch /app/collector/hotdir/raiqaAssistant.db
+
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 COPY . .
 
-# Set proper ownership
-RUN chown -R raiqaAssistant:raiqaAssistant /app
+# Set proper ownership and permissions
+RUN chown -R raiqaAssistant:raiqaAssistant /app && \
+    chmod -R 755 /app/collector/hotdir
 
-# Switch to raiqaAssistant user
 USER raiqaAssistant
-
 ENV NODE_ENV=production
+
 CMD ["yarn", "start"]
