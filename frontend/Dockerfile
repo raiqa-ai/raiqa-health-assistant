@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 COPY . .
-ENV VITE_API_BASE=https://raiqa-health-qa-server.internal.whitedesert-4dbc0075.australiaeast.azurecontainerapps.io/api
+ENV VITE_API_BASE=https://raiqa-health-qa-server.whitedesert-4dbc0075.australiaeast.azurecontainerapps.io/api
 RUN yarn build
 
 FROM nginx:alpine
