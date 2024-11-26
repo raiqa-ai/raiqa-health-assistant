@@ -145,7 +145,9 @@ function workspaceEndpoints(app) {
           return;
         }
 
-        const filePath = `/app/collector/hotdir/${originalname}`;
+        const filePath = process.env.NODE_ENV === "development"
+          ? `/app/collector/hotdir/${originalname}`
+          : path.join(process.env.STORAGE_DIR, 'documents', originalname);
         console.log('Checking file existence:', {
           path: filePath,
           exists: fs.existsSync(filePath)
