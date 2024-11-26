@@ -18,13 +18,6 @@ WORKDIR /app
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
-# Create directories if they dont exist\n\
-mkdir -p /app/collector/hotdir/documents\n\
-mkdir -p /app/collector/hotdir/vector-cache\n\
-mkdir -p /app/collector/hotdir/lancedb\n\
-mkdir -p /app/collector/hotdir/comkey\n\
-touch /app/collector/hotdir/raiqaAssistant.db\n\
-\n\
 echo "=== System Information ==="\n\
 date\n\
 id\n\

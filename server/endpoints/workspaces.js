@@ -116,11 +116,25 @@ function workspaceEndpoints(app) {
     ],
     async function (request, response) {
       try {
+        console.log('Upload request received:', {
+          file: {
+            originalname: request.file.originalname,
+            path: request.file.path,
+            size: request.file.size
+          }
+        });
+
         const Collector = new CollectorApi();
         const { originalname } = request.file;
-        const processingOnline = await Collector.online();
 
+        console.log('Attempting to process document:', {
+          filename: originalname,
+          collectorHotDir: '/app/collector/hotdir'
+        });
+
+        const processingOnline = await Collector.online();
         if (!processingOnline) {
+          console.error('Collector API is offline');
           response
             .status(500)
             .json({
@@ -131,8 +145,15 @@ function workspaceEndpoints(app) {
           return;
         }
 
-        const { success, reason } =
-          await Collector.processDocument(originalname);
+        const filePath = `/app/collector/hotdir/${originalname}`;
+        console.log('Checking file existence:', {
+          path: filePath,
+          exists: fs.existsSync(filePath)
+        });
+
+        const { success, reason } = await Collector.processDocument(originalname);
+        console.log('Collector processing result:', { success, reason });
+
         if (!success) {
           response.status(500).json({ success: false, error: reason }).end();
           return;
@@ -151,7 +172,10 @@ function workspaceEndpoints(app) {
         );
         response.status(200).json({ success: true, error: null });
       } catch (e) {
-        console.error(e.message, e);
+        console.error('Upload error:', {
+          message: e.message,
+          stack: e.stack
+        });
         response.sendStatus(500).end();
       }
     }

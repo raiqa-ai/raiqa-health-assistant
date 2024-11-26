@@ -22,10 +22,7 @@ COPY . .
 RUN npx prisma generate
 
 # Create necessary directories and set permissions during build
-RUN mkdir -p /app/server/storage/documents \
-    /app/server/storage/vector-cache \
-    /app/server/storage/lancedb \
-    /app/server/storage/assets/pfp && \
+RUN mkdir -p /app/server/storage/assets/pfp && \
     touch /app/server/storage/raiqaAssistant.db && \
     chown -R raiqaAssistant:raiqaAssistant /app
 
