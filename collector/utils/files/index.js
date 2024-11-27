@@ -48,10 +48,15 @@ function writeToServerDocuments(
 ) {
   const destination = destinationOverride
     ? path.resolve(destinationOverride)
-    : path.resolve(
-        __dirname,
-        "../../../server/storage/documents/custom-documents"
-      );
+    : process.env.NODE_ENV === "development"
+      ? path.resolve(
+          __dirname,
+          "../../../server/storage/documents/custom-documents"
+        )
+      : path.resolve(
+          process.env.STORAGE_DIR || '/app/server/storage',
+          "documents/custom-documents"
+        );
   if (!fs.existsSync(destination))
     fs.mkdirSync(destination, { recursive: true });
   const destinationFilePath = path.resolve(destination, filename) + ".json";
@@ -62,9 +67,6 @@ function writeToServerDocuments(
 
   return {
     ...data,
-    // relative location string that can be passed into the /update-embeddings api
-    // that will work since we know the location exists and since we only allow
-    // 1-level deep folders this will always work. This still works for integrations like GitHub and YouTube.
     location: destinationFilePath.split("/").slice(-2).join("/"),
   };
 }
