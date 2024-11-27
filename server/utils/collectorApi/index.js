@@ -63,20 +63,33 @@ class CollectorApi {
     });
 
     try {
+      const integrity = this.comkey.sign(data);
+      const payloadSigner = this.comkey.encrypt(new EncryptionManager().xPayload);
+      
+      console.log('Sending request to collector:', {
+        endpoint: `${this.endpoint}/process`,
+        filename,
+        integrityLength: integrity.length,
+        payloadSignerLength: payloadSigner.length
+      });
+
       const response = await fetch(`${this.endpoint}/process`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Integrity": this.comkey.sign(data),
-          "X-Payload-Signer": this.comkey.encrypt(
-            new EncryptionManager().xPayload
-          ),
+          "X-Integrity": integrity,
+          "X-Payload-Signer": payloadSigner,
         },
         body: data,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Collector response error:', {
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries()),
+          error: errorText
+        });
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
