@@ -215,8 +215,32 @@ const LanceDb = {
    */
   namespaceExists: async function (client, namespace = null) {
     if (!namespace) throw new Error("No namespace value provided.");
-    const collections = await client.tableNames();
-    return collections.includes(namespace);
+    
+    try {
+      // Step 1: Check if table name exists in collections
+      const collections = await client.tableNames();
+      if (!collections.includes(namespace)) {
+        return false;
+      }
+
+      // Step 2: Try to open the table
+      const table = await client.openTable(namespace);
+      
+      // Step 3: Verify table is actually readable
+      await table.countRows();
+      return true;
+      
+    } catch (error) {
+      console.log(`Table ${namespace} exists but is corrupted or cannot be opened:`, error.message);
+      // If table exists in collections but can't be opened/used, clean it up
+      try {
+        await client.dropTable(namespace);
+        console.log(`Dropped corrupted table ${namespace}`);
+      } catch (e) {
+        console.log("Could not drop corrupted table:", e.message);
+      }
+      return false;
+    }
   },
   /**
    *
