@@ -5,16 +5,20 @@ const { SystemSettings } = require("../../../models/systemSettings");
 const { storeVectorResult, cachedVectorInformation } = require("../../files");
 const { v4: uuidv4 } = require("uuid");
 const { sourceIdentifier } = require("../../chats");
+const path = require('path');
+const fs = require('fs');
 
 /**
  * LancedDB Client connection object
  * @typedef {import('@lancedb/lancedb').Connection} LanceClient
  */
 
+const lanceDbPath = process.env.NODE_ENV === "development"
+  ? path.resolve(__dirname, "../../../storage/lancedb")
+  : path.resolve(process.env.STORAGE_DIR, "lancedb");
+
 const LanceDb = {
-  uri: `${
-    !!process.env.STORAGE_DIR ? `${process.env.STORAGE_DIR}/` : "./storage/"
-  }lancedb`,
+  uri: lanceDbPath,
   name: "LanceDb",
 
   /** @returns {Promise<{client: LanceClient}>} */
@@ -22,8 +26,22 @@ const LanceDb = {
     if (process.env.VECTOR_DB !== "lancedb")
       throw new Error("LanceDB::Invalid ENV settings");
 
-    const client = await lancedb.connect(this.uri);
-    return { client };
+    try {
+      if (!fs.existsSync(lanceDbPath)) {
+        fs.mkdirSync(lanceDbPath, { recursive: true });
+      }
+      
+      return {
+        client: lanceDbPath,
+        error: null,
+      };
+    } catch (e) {
+      console.error("Failed to connect to LanceDB:", e);
+      return {
+        client: null,
+        error: e.message,
+      };
+    }
   },
   distanceToSimilarity: function (distance = null) {
     if (distance === null || typeof distance !== "number") return 0.0;
