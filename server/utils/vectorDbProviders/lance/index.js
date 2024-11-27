@@ -163,42 +163,36 @@ const LanceDb = {
         return true;
       }
 
+      // Determine vector dimension from the first vector in submissions
       const firstItem = data[0];
-      if (!firstItem || !firstItem.vector) {
-        throw new Error("No vector data provided for schema creation");
-      }
+      const vectorDimension = firstItem.vector.length;
 
       console.log("Vector dimensions:", firstItem.vector.length);
       console.log("Vector type:", typeof firstItem.vector);
       console.log("Is vector array?", Array.isArray(firstItem.vector));
 
       // Try simpler schema first
-      const schema = {
-        "fields": [
-          {
-            "name": "id",
-            "type": "string",
-            "nullable": false
-          },
-          {
-            "name": "vector",
-            "type": {
-              "type": "list",
-              "childType": {
-                "type": "float32"
-              }
-            },
-            "nullable": false
-          },
-          {
-            "name": "text",
-            "type": "string",
-            "nullable": false
-          }
-        ]
-      };
+      const schema = [
+        {
+          name: 'id',
+          type: 'string',
+          nullable: false,
+        },
+        {
+          name: 'vector',
+          type: 'vector',
+          dim: vectorDimension,
+          nullable: false,
+        },
+        {
+          name: 'text',
+          type: 'string',
+          nullable: false,
+        },
+        // Add other fields as necessary
+      ];
 
-      console.log("\nAttempting to create table with schema:", JSON.stringify(schema, null, 2));
+      console.log("\nAttempting to create table with schema:", JSON.stringify({ fields: schema }, null, 2));
       
       // Log the actual data being passed
       console.log("\nFirst row being inserted:", {
@@ -207,8 +201,8 @@ const LanceDb = {
         text_preview: data[0].text?.substring(0, 50)
       });
 
-      const table = await client.createTable(namespace, data, { schema });
-      console.log("Table created successfully");
+      await client.createTable(namespace, submissions, { schema });
+      console.log("Table created successfully.");
       return true;
     } catch (error) {
       console.error("\n=== LanceDB Error Details ===");
