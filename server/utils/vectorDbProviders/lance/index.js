@@ -152,10 +152,14 @@ const LanceDb = {
    */
   updateOrCreateCollection: async function (client, data = [], namespace) {
     try {
+      console.log("Updating or creating LanceDB collection:", namespace);
       const hasNamespace = await this.hasNamespace(namespace);
       if (hasNamespace) {
+        console.log("Collection already exists, updating...");
         const collection = await client.openTable(namespace);
+        console.log("Adding data to existing collection...");
         await collection.add(data);
+        console.log("Data added successfully.");
         return true;
       }
 
