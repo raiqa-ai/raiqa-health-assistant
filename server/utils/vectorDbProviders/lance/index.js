@@ -171,20 +171,22 @@ const LanceDb = {
 
       // Define schema for new table with proper vector dimensions
       const schema = {
-        id: 'string',
-        vector: `float32[${firstItem.vector.length}]`, // Specify vector dimensions
-        text: 'string',
-        source: 'string',
-        location: 'string',
-        pageNumber: 'int',
-        title: 'string',
-        published: 'string',
-        wordCount: 'int',
-        token_count_estimate: 'int',
-        docAuthor: 'string',
-        description: 'string',
-        docSource: 'string',
-        chunkSource: 'string'
+        fields: [
+          { name: 'id', type: 'string' },
+          { name: 'vector', type: `float32[${firstItem.vector.length}]` },
+          { name: 'text', type: 'string' },
+          { name: 'source', type: 'string' },
+          { name: 'location', type: 'string' },
+          { name: 'pageNumber', type: 'int' },
+          { name: 'title', type: 'string' },
+          { name: 'published', type: 'string' },
+          { name: 'wordCount', type: 'int' },
+          { name: 'token_count_estimate', type: 'int' },
+          { name: 'docAuthor', type: 'string' },
+          { name: 'description', type: 'string' },
+          { name: 'docSource', type: 'string' },
+          { name: 'chunkSource', type: 'string' }
+        ]
       };
 
       console.log("Creating new LanceDB table with schema:", schema);
