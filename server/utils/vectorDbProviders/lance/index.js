@@ -174,10 +174,27 @@ const LanceDb = {
 
       // Try simpler schema first
       const schema = {
-        fields: [
-          { name: 'id', type: 'string' },
-          { name: 'vector', type: { type: 'list', childType: { type: 'float32' } } },
-          { name: 'text', type: 'string' }
+        "fields": [
+          {
+            "name": "id",
+            "type": "string",
+            "nullable": false
+          },
+          {
+            "name": "vector",
+            "type": {
+              "type": "list",
+              "childType": {
+                "type": "float32"
+              }
+            },
+            "nullable": false
+          },
+          {
+            "name": "text",
+            "type": "string",
+            "nullable": false
+          }
         ]
       };
 
