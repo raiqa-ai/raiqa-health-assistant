@@ -190,11 +190,7 @@ const LanceDb = {
       console.log("Creating new LanceDB table with schema:", schema);
       
       // Create new table with schema and data
-      const table = await client.createTable(namespace, schema);
-      if (data.length > 0) {
-        await table.add(data);
-      }
-      
+      const table = await client.createTable(namespace, data, { schema });
       return true;
     } catch (error) {
       console.error("Failed to update or create collection:", error);
