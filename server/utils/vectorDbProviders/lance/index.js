@@ -201,7 +201,7 @@ const LanceDb = {
         text_preview: data[0].text?.substring(0, 50)
       });
 
-      await client.createTable(namespace, submissions, { schema });
+      await client.createTable(namespace, data, { schema });
       console.log("Table created successfully.");
       return true;
     } catch (error) {
