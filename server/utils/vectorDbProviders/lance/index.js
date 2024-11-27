@@ -172,20 +172,20 @@ const LanceDb = {
       // Define schema for new table with proper vector dimensions
       const schema = {
         fields: [
-          { name: 'id', type: 'string' },
-          { name: 'vector', type: `float32[${firstItem.vector.length}]` },
-          { name: 'text', type: 'string' },
-          { name: 'source', type: 'string' },
-          { name: 'location', type: 'string' },
-          { name: 'pageNumber', type: 'int' },
-          { name: 'title', type: 'string' },
-          { name: 'published', type: 'string' },
-          { name: 'wordCount', type: 'int' },
-          { name: 'token_count_estimate', type: 'int' },
-          { name: 'docAuthor', type: 'string' },
-          { name: 'description', type: 'string' },
-          { name: 'docSource', type: 'string' },
-          { name: 'chunkSource', type: 'string' }
+          { name: 'id', type: 'string', nullable: false },
+          { name: 'vector', type: `float32[${firstItem.vector.length}]`, nullable: false },
+          { name: 'text', type: 'string', nullable: true },
+          { name: 'source', type: 'string', nullable: true },
+          { name: 'location', type: 'string', nullable: true },
+          { name: 'pageNumber', type: 'int', nullable: true },
+          { name: 'title', type: 'string', nullable: true },
+          { name: 'published', type: 'string', nullable: true },
+          { name: 'wordCount', type: 'int', nullable: true },
+          { name: 'token_count_estimate', type: 'int', nullable: true },
+          { name: 'docAuthor', type: 'string', nullable: true },
+          { name: 'description', type: 'string', nullable: true },
+          { name: 'docSource', type: 'string', nullable: true },
+          { name: 'chunkSource', type: 'string', nullable: true }
         ]
       };
 
