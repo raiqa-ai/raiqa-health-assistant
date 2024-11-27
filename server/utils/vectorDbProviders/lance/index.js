@@ -159,19 +159,38 @@ const LanceDb = {
         return true;
       }
 
-      // Define schema for new table
+      // Get the first item to determine vector dimensions
+      const firstItem = data[0];
+      if (!firstItem || !firstItem.vector) {
+        throw new Error("No vector data provided for schema creation");
+      }
+
+      // Define schema for new table with proper vector dimensions
       const schema = {
         id: 'string',
-        vector: 'float[]',
+        vector: `float32[${firstItem.vector.length}]`, // Specify vector dimensions
         text: 'string',
         source: 'string',
         location: 'string',
-        pageNumber: 'int32',
-        metadata: 'string' // For any additional metadata
+        pageNumber: 'int',
+        title: 'string',
+        published: 'string',
+        wordCount: 'int',
+        token_count_estimate: 'int',
+        docAuthor: 'string',
+        description: 'string',
+        docSource: 'string',
+        chunkSource: 'string'
       };
 
-      // Create new table with schema
-      await client.createTable(namespace, data, { schema });
+      console.log("Creating new LanceDB table with schema:", schema);
+      
+      // Create new table with schema and data
+      const table = await client.createTable(namespace, schema);
+      if (data.length > 0) {
+        await table.add(data);
+      }
+      
       return true;
     } catch (error) {
       console.error("Failed to update or create collection:", error);
@@ -237,10 +256,11 @@ const LanceDb = {
       if (!pageContent || pageContent.length == 0) return false;
 
       console.log("Adding new vectorized document into namespace", namespace);
+      const { client } = await this.connect();
+
       if (skipCache) {
         const cacheResult = await cachedVectorInformation(fullFilePath);
         if (cacheResult.exists) {
-          const { client } = await this.connect();
           const { chunks } = cacheResult;
           const documentVectors = [];
           const submissions = [];
@@ -248,12 +268,18 @@ const LanceDb = {
           for (const chunk of chunks) {
             chunk.forEach((chunk) => {
               const id = uuidv4();
-              const { id: _id, ...metadata } = chunk.metadata;
+              const { id: _id, ...chunkMetadata } = chunk.metadata;
               documentVectors.push({ docId, vectorId: id });
-              submissions.push({ id: id, vector: chunk.values, ...metadata });
+              submissions.push({
+                id,
+                vector: chunk.values,
+                text: chunk.metadata.text || '',
+                ...chunkMetadata
+              });
             });
           }
 
+          console.log("Inserting vectorized chunks into LanceDB collection.");
           await this.updateOrCreateCollection(client, submissions, namespace);
           await DocumentVectors.bulkInsert(documentVectors);
           return { vectorized: true, error: null };
@@ -316,7 +342,6 @@ const LanceDb = {
         for (const chunk of toChunks(vectors, 500)) chunks.push(chunk);
 
         console.log("Inserting vectorized chunks into LanceDB collection.");
-        const { client } = await this.connect();
         await this.updateOrCreateCollection(client, submissions, namespace);
         await storeVectorResult(chunks, fullFilePath);
       }
