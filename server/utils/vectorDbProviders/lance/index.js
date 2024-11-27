@@ -151,15 +151,32 @@ const LanceDb = {
    * @returns
    */
   updateOrCreateCollection: async function (client, data = [], namespace) {
-    const hasNamespace = await this.hasNamespace(namespace);
-    if (hasNamespace) {
-      const collection = await client.openTable(namespace);
-      await collection.add(data);
-      return true;
-    }
+    try {
+      const hasNamespace = await this.hasNamespace(namespace);
+      if (hasNamespace) {
+        const collection = await client.openTable(namespace);
+        await collection.add(data);
+        return true;
+      }
 
-    await client.createTable(namespace, data);
-    return true;
+      // Define schema for new table
+      const schema = {
+        id: 'string',
+        vector: 'float[]',
+        text: 'string',
+        source: 'string',
+        location: 'string',
+        pageNumber: 'int32',
+        metadata: 'string' // For any additional metadata
+      };
+
+      // Create new table with schema
+      await client.createTable(namespace, data, { schema });
+      return true;
+    } catch (error) {
+      console.error("Failed to update or create collection:", error);
+      throw error;
+    }
   },
   hasNamespace: async function (namespace = null) {
     if (!namespace) return false;
