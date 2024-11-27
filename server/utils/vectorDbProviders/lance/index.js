@@ -152,48 +152,52 @@ const LanceDb = {
    */
   updateOrCreateCollection: async function (client, data = [], namespace) {
     try {
-      console.log("Updating or creating LanceDB collection:", namespace);
+      console.log("\n=== Debug LanceDB Collection Creation ===");
+      console.log("Input data first item:", JSON.stringify(data[0], null, 2));
+      
       const hasNamespace = await this.hasNamespace(namespace);
       if (hasNamespace) {
-        console.log("Collection already exists, updating...");
+        console.log("Collection exists, updating existing table");
         const collection = await client.openTable(namespace);
-        console.log("Adding data to existing collection...");
         await collection.add(data);
-        console.log("Data added successfully.");
         return true;
       }
 
-      // Get the first item to determine vector dimensions
       const firstItem = data[0];
       if (!firstItem || !firstItem.vector) {
         throw new Error("No vector data provided for schema creation");
       }
 
-      // Define schema for new table with proper vector dimensions
+      console.log("Vector dimensions:", firstItem.vector.length);
+      console.log("Vector type:", typeof firstItem.vector);
+      console.log("Is vector array?", Array.isArray(firstItem.vector));
+
+      // Try simpler schema first
       const schema = {
         fields: [
-          { name: 'id', type: 'utf8', nullable: false },
-          { name: 'vector', type: { type: 'fixed_size_list', listSize: firstItem.vector.length, childType: 'float32' }, nullable: false },
-          { name: 'text', type: 'utf8', nullable: true },
-          { name: 'source', type: 'utf8', nullable: true },
-          { name: 'location', type: 'utf8', nullable: true },
-          { name: 'pageNumber', type: 'int32', nullable: true },
-          { name: 'title', type: 'utf8', nullable: true },
-          { name: 'published', type: 'utf8', nullable: true },
-          { name: 'wordCount', type: 'int32', nullable: true },
-          { name: 'token_count_estimate', type: 'int32', nullable: true },
-          { name: 'docAuthor', type: 'utf8', nullable: true },
-          { name: 'description', type: 'utf8', nullable: true },
-          { name: 'docSource', type: 'utf8', nullable: true },
-          { name: 'chunkSource', type: 'utf8', nullable: true }
+          { name: 'id', type: 'string' },
+          { name: 'vector', type: { type: 'list', childType: { type: 'float32' } } },
+          { name: 'text', type: 'string' }
         ]
       };
 
-      console.log("Creating new LanceDB table with schema:", schema);
+      console.log("\nAttempting to create table with schema:", JSON.stringify(schema, null, 2));
+      
+      // Log the actual data being passed
+      console.log("\nFirst row being inserted:", {
+        id: data[0].id,
+        vector_length: data[0].vector.length,
+        text_preview: data[0].text?.substring(0, 50)
+      });
+
       const table = await client.createTable(namespace, data, { schema });
+      console.log("Table created successfully");
       return true;
     } catch (error) {
-      console.error("Failed to update or create collection:", error);
+      console.error("\n=== LanceDB Error Details ===");
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
       throw error;
     }
   },
