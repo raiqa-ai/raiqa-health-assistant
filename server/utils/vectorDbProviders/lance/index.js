@@ -172,26 +172,24 @@ const LanceDb = {
       // Define schema for new table with proper vector dimensions
       const schema = {
         fields: [
-          { name: 'id', type: 'string', nullable: false },
-          { name: 'vector', type: `float32[${firstItem.vector.length}]`, nullable: false },
-          { name: 'text', type: 'string', nullable: true },
-          { name: 'source', type: 'string', nullable: true },
-          { name: 'location', type: 'string', nullable: true },
-          { name: 'pageNumber', type: 'int', nullable: true },
-          { name: 'title', type: 'string', nullable: true },
-          { name: 'published', type: 'string', nullable: true },
-          { name: 'wordCount', type: 'int', nullable: true },
-          { name: 'token_count_estimate', type: 'int', nullable: true },
-          { name: 'docAuthor', type: 'string', nullable: true },
-          { name: 'description', type: 'string', nullable: true },
-          { name: 'docSource', type: 'string', nullable: true },
-          { name: 'chunkSource', type: 'string', nullable: true }
+          { name: 'id', type: 'utf8', nullable: false },
+          { name: 'vector', type: { type: 'fixed_size_list', listSize: firstItem.vector.length, childType: 'float32' }, nullable: false },
+          { name: 'text', type: 'utf8', nullable: true },
+          { name: 'source', type: 'utf8', nullable: true },
+          { name: 'location', type: 'utf8', nullable: true },
+          { name: 'pageNumber', type: 'int32', nullable: true },
+          { name: 'title', type: 'utf8', nullable: true },
+          { name: 'published', type: 'utf8', nullable: true },
+          { name: 'wordCount', type: 'int32', nullable: true },
+          { name: 'token_count_estimate', type: 'int32', nullable: true },
+          { name: 'docAuthor', type: 'utf8', nullable: true },
+          { name: 'description', type: 'utf8', nullable: true },
+          { name: 'docSource', type: 'utf8', nullable: true },
+          { name: 'chunkSource', type: 'utf8', nullable: true }
         ]
       };
 
       console.log("Creating new LanceDB table with schema:", schema);
-      
-      // Create new table with schema and data
       const table = await client.createTable(namespace, data, { schema });
       return true;
     } catch (error) {
