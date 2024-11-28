@@ -438,13 +438,36 @@ const LanceDb = {
     
     try {
       console.log(`[LanceDB] Attempting to delete namespace: ${namespace}`);
+      
+      // Step 1: Try API deletion first
       await this.deleteVectorsInNamespace(client, namespace);
       
-      // Add physical cleanup
+      // Step 2: Physical cleanup
       const namespacePath = path.join(process.env.STORAGE_DIR || './storage', 'lancedb', `${namespace}.lance`);
       if (fs.existsSync(namespacePath)) {
         console.log(`[LanceDB] Removing namespace directory: ${namespacePath}`);
-        fs.rmSync(namespacePath, { recursive: true, force: true });
+        try {
+          // First try recursive deletion
+          fs.rmSync(namespacePath, { recursive: true, force: true });
+        } catch (fsError) {
+          console.error(`[LanceDB] Failed standard directory removal, attempting manual cleanup`, {
+            error: fsError.message,
+            path: namespacePath
+          });
+          
+          // If recursive deletion fails, try manual file-by-file cleanup
+          const files = fs.readdirSync(namespacePath);
+          for (const file of files) {
+            const filePath = path.join(namespacePath, file);
+            try {
+              fs.unlinkSync(filePath);
+            } catch (e) {
+              console.warn(`[LanceDB] Could not remove file: ${filePath}`, e.message);
+            }
+          }
+          // Try directory removal again after files are gone
+          fs.rmdirSync(namespacePath);
+        }
       }
       
       return {
