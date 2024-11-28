@@ -223,6 +223,12 @@ const LanceDb = {
       } catch (error) {
         console.log(`[LanceDB] Primary delete operation failed, attempting manual file operation`);
         await this.handleFileOperation(error, 'delete_vectors');
+        
+        // After manual file operation succeeds, we still need to clean up the DocumentVectors
+        const indexes = documents.map((doc) => doc.id);
+        await DocumentVectors.deleteIds(indexes);
+        console.log(`[LanceDB] Successfully deleted ${indexes.length} vector records after manual operation`);
+        return true;
       }
 
       const indexes = documents.map((doc) => doc.id);
@@ -233,7 +239,8 @@ const LanceDb = {
       console.error("[LanceDB] Failed to delete vectors in namespace", {
         namespace,
         error: e.message,
-        stack: e.stack
+        stack: e.stack,
+        operation: 'delete_vectors'
       });
       throw new Error(
         `Failed to delete rows in table ${namespace}: predicate=${e.message}`
