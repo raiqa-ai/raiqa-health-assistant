@@ -178,13 +178,17 @@ const LanceDb = {
           error.message.includes("Operation not supported (os error 95)")) {
         
         // Extract source and destination paths from the error message
-        const errorMsg = error.message;
-        const fromPath = errorMsg.split('from ')[1].split(' to ')[0];
-        const toPath = errorMsg.split(' to ')[1].split(':')[0];
+        // The error message format is: "Unable to copy file from [source] to [dest]:"
+        const match = error.message.match(/Unable to copy file from (.*?) to (.*?):/);
+        if (!match) {
+          console.error("Could not parse file paths from error message:", error.message);
+          throw error;
+        }
         
+        const [_, fromPath, toPath] = match;
         console.log(`Attempting manual file copy from ${fromPath} to ${toPath}`);
         
-        try {
+        try {          
           // Read the source file
           const content = fs.readFileSync(fromPath);
           // Write to destination
