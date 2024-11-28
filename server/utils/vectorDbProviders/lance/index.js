@@ -247,10 +247,7 @@ const LanceDb = {
 
     const { DocumentVectors } = require("../../../models/vectors");
     const knownDocuments = await DocumentVectors.where({ docId });
-    if (knownDocuments.length === 0) {
-      console.log(`[LanceDB] No vectors found for document ${docId}`);
-      return;
-    }
+    if (knownDocuments.length === 0) return;
 
     try {
       const table = await client.openTable(namespace);
@@ -258,36 +255,16 @@ const LanceDb = {
       console.log(`[LanceDB] Attempting to delete ${vectorIds.length} vectors for document ${docId}`);
       
       try {
-        await table.delete(`id IN ['${vectorIds.join("','")}']`);
-        
-        // Verify deletion
-        const verifyQuery = await table.filter(`id IN ['${vectorIds.join("','")}']`);
-        const remainingRows = await verifyQuery.select(['id']).collect();
-        if (remainingRows.length > 0) {
-          console.warn(`[LanceDB] Delete verification failed - ${remainingRows.length} vectors still exist`);
-          throw new Error('Delete verification failed');
-        }
+        const deleteQuery = `id IN ('${vectorIds.join("', '")}')`;
+        console.log(`[LanceDB] Executing delete query: ${deleteQuery}`);
+        await table.delete(deleteQuery);
       } catch (error) {
         console.log(`[LanceDB] Delete operation failed, attempting manual file operation`);
         await this.handleFileOperation(error, 'delete_document');
       }
 
-      // Clean up DocumentVectors regardless of which deletion path succeeded
       const indexes = knownDocuments.map((doc) => doc.id);
       await DocumentVectors.deleteIds(indexes);
-      
-      // Final verification
-      const remainingDocs = await DocumentVectors.where({ docId });
-      if (remainingDocs.length > 0) {
-        console.error(`[LanceDB] Document vector cleanup verification failed`, {
-          remaining: remainingDocs.length,
-          docId,
-          namespace
-        });
-        throw new Error('Document vector cleanup verification failed');
-      }
-      
-      console.log(`[LanceDB] Successfully deleted document vectors and cleaned up records`);
       return true;
     } catch (e) {
       console.error(`[LanceDB] Failed to delete document from namespace`, {
@@ -454,14 +431,33 @@ const LanceDb = {
   },
   "delete-namespace": async function (reqBody = {}) {
     const { namespace = null } = reqBody;
+    if (!namespace) throw new Error("No namespace value provided");
+    
     const { client } = await this.connect();
-    if (!(await this.namespaceExists(client, namespace)))
-      throw new Error("Namespace by that name does not exist.");
-
-    await this.deleteVectorsInNamespace(client, namespace);
-    return {
-      message: `Namespace ${namespace} was deleted.`,
-    };
+    if (!(await this.namespaceExists(client, namespace))) return;
+    
+    try {
+      console.log(`[LanceDB] Attempting to delete namespace: ${namespace}`);
+      await this.deleteVectorsInNamespace(client, namespace);
+      
+      // Add physical cleanup
+      const namespacePath = path.join(process.env.STORAGE_DIR || './storage', 'lancedb', `${namespace}.lance`);
+      if (fs.existsSync(namespacePath)) {
+        console.log(`[LanceDB] Removing namespace directory: ${namespacePath}`);
+        fs.rmSync(namespacePath, { recursive: true, force: true });
+      }
+      
+      return {
+        message: `Namespace ${namespace} was deleted successfully.`
+      };
+    } catch (e) {
+      console.error(`[LanceDB] Failed to delete namespace`, {
+        namespace,
+        error: e.message,
+        stack: e.stack
+      });
+      throw e;
+    }
   },
   reset: async function () {
     const { client } = await this.connect();
