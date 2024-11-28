@@ -151,66 +151,15 @@ const LanceDb = {
    * @returns
    */
   updateOrCreateCollection: async function (client, data = [], namespace) {
-    try {
-      console.log("\n=== Debug LanceDB Collection Creation ===");
-      console.log("Input data first item:", JSON.stringify(data[0], null, 2));
-      
-      const hasNamespace = await this.hasNamespace(namespace);
-      if (hasNamespace) {
-        console.log("Collection exists, updating existing table");
-        const collection = await client.openTable(namespace);
-        await collection.add(data);
-        return true;
-      }
-
-      // Determine vector dimension from the first vector in submissions
-      const firstItem = data[0];
-      const vectorDimension = firstItem.vector.length;
-
-      console.log("Vector dimensions:", firstItem.vector.length);
-      console.log("Vector type:", typeof firstItem.vector);
-      console.log("Is vector array?", Array.isArray(firstItem.vector));
-
-      // Try simpler schema first
-      const schema = [
-        {
-          name: 'id',
-          type: 'string',
-          nullable: false,
-        },
-        {
-          name: 'vector',
-          type: 'vector',
-          dim: vectorDimension,
-          nullable: false,
-        },
-        {
-          name: 'text',
-          type: 'string',
-          nullable: false,
-        },
-        // Add other fields as necessary
-      ];
-
-      console.log("\nAttempting to create table with schema:", JSON.stringify({ fields: schema }, null, 2));
-      
-      // Log the actual data being passed
-      console.log("\nFirst row being inserted:", {
-        id: data[0].id,
-        vector_length: data[0].vector.length,
-        text_preview: data[0].text?.substring(0, 50)
-      });
-
-      await client.createTable(namespace, data, { schema });
-      console.log("Table created successfully.");
+    const hasNamespace = await this.hasNamespace(namespace);
+    if (hasNamespace) {
+      const collection = await client.openTable(namespace);
+      await collection.add(data);
       return true;
-    } catch (error) {
-      console.error("\n=== LanceDB Error Details ===");
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-      throw error;
     }
+
+    await client.createTable(namespace, data);
+    return true;
   },
   hasNamespace: async function (namespace = null) {
     if (!namespace) return false;
@@ -226,32 +175,8 @@ const LanceDb = {
    */
   namespaceExists: async function (client, namespace = null) {
     if (!namespace) throw new Error("No namespace value provided.");
-    
-    try {
-      // Step 1: Check if table name exists in collections
-      const collections = await client.tableNames();
-      if (!collections.includes(namespace)) {
-        return false;
-      }
-
-      // Step 2: Try to open the table
-      const table = await client.openTable(namespace);
-      
-      // Step 3: Verify table is actually readable
-      await table.countRows();
-      return true;
-      
-    } catch (error) {
-      console.log(`Table ${namespace} exists but is corrupted or cannot be opened:`, error.message);
-      // If table exists in collections but can't be opened/used, clean it up
-      try {
-        await client.dropTable(namespace);
-        console.log(`Dropped corrupted table ${namespace}`);
-      } catch (e) {
-        console.log("Could not drop corrupted table:", e.message);
-      }
-      return false;
-    }
+    const collections = await client.tableNames();
+    return collections.includes(namespace);
   },
   /**
    *
@@ -295,11 +220,10 @@ const LanceDb = {
       if (!pageContent || pageContent.length == 0) return false;
 
       console.log("Adding new vectorized document into namespace", namespace);
-      const { client } = await this.connect();
-
-      if (skipCache) {
+      if (!skipCache) {
         const cacheResult = await cachedVectorInformation(fullFilePath);
         if (cacheResult.exists) {
+          const { client } = await this.connect();
           const { chunks } = cacheResult;
           const documentVectors = [];
           const submissions = [];
@@ -307,18 +231,12 @@ const LanceDb = {
           for (const chunk of chunks) {
             chunk.forEach((chunk) => {
               const id = uuidv4();
-              const { id: _id, ...chunkMetadata } = chunk.metadata;
+              const { id: _id, ...metadata } = chunk.metadata;
               documentVectors.push({ docId, vectorId: id });
-              submissions.push({
-                id,
-                vector: chunk.values,
-                text: chunk.metadata.text || '',
-                ...chunkMetadata
-              });
+              submissions.push({ id: id, vector: chunk.values, ...metadata });
             });
           }
 
-          console.log("Inserting vectorized chunks into LanceDB collection.");
           await this.updateOrCreateCollection(client, submissions, namespace);
           await DocumentVectors.bulkInsert(documentVectors);
           return { vectorized: true, error: null };
@@ -381,6 +299,7 @@ const LanceDb = {
         for (const chunk of toChunks(vectors, 500)) chunks.push(chunk);
 
         console.log("Inserting vectorized chunks into LanceDB collection.");
+        const { client } = await this.connect();
         await this.updateOrCreateCollection(client, submissions, namespace);
         await storeVectorResult(chunks, fullFilePath);
       }
