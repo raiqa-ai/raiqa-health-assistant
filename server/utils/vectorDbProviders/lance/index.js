@@ -251,9 +251,7 @@ const LanceDb = {
     const { client } = await this.connect();
     const exists = await this.namespaceExists(client, namespace);
     if (!exists) {
-      console.error(
-        `LanceDB:deleteDocumentFromNamespace - namespace ${namespace} does not exist.`
-      );
+      console.log(`[LanceDB] Namespace ${namespace} does not exist for deletion`);
       return;
     }
 
@@ -264,8 +262,17 @@ const LanceDb = {
     );
 
     if (vectorIds.length === 0) return;
-    await table.delete(`id IN (${vectorIds.map((v) => `'${v}'`).join(",")})`);
-    return true;
+    
+    try {
+      console.log(`[LanceDB] Attempting to delete ${vectorIds.length} vectors for document ${docId}`);
+      await table.delete(`id IN (${vectorIds.map((v) => `'${v}'`).join(",")})`);
+      console.log(`[LanceDB] Successfully deleted vectors`);
+      return true;
+    } catch (error) {
+      console.log(`[LanceDB] Delete operation failed, attempting manual file operation`);
+      await this.handleFileOperation(error, 'delete_document');
+      return true;
+    }
   },
   addDocumentToNamespace: async function (
     namespace,
@@ -464,31 +471,43 @@ const LanceDb = {
       }
       
       const [_, fromPath, toPath] = match;
-      console.log(`[LanceDB] Attempting manual file copy:
+      console.log(`[LanceDB] Attempting manual file operation:
         Operation: ${operation}
         From: ${fromPath}
         To: ${toPath}
       `);
       
       try {
+        // For manifest files, we need to ensure the directory exists
+        const toDir = path.dirname(toPath);
+        if (!fs.existsSync(toDir)) {
+          fs.mkdirSync(toDir, { recursive: true });
+        }
+        
         const content = fs.readFileSync(fromPath);
-        console.log(`[LanceDB] Successfully read source file: ${fromPath} (${content.length} bytes)`);
+        console.log(`[LanceDB] Read source file: ${fromPath} (${content.length} bytes)`);
         
         fs.writeFileSync(toPath, content);
-        console.log(`[LanceDB] Successfully wrote destination file: ${toPath}`);
+        console.log(`[LanceDB] Wrote destination file: ${toPath}`);
         
-        fs.unlinkSync(fromPath);
-        console.log(`[LanceDB] Successfully cleaned up temporary file: ${fromPath}`);
+        // Only delete source if it still exists
+        if (fs.existsSync(fromPath)) {
+          fs.unlinkSync(fromPath);
+          console.log(`[LanceDB] Cleaned up temporary file: ${fromPath}`);
+        }
+        
         return true;
       } catch (copyError) {
-        console.error(`[LanceDB] Manual file operation failed for ${operation}:`, {
+        console.error(`[LanceDB] Manual file operation failed:`, {
+          operation,
           error: copyError.message,
           code: copyError.code,
           fromPath,
           toPath,
           exists: {
             from: fs.existsSync(fromPath),
-            to: fs.existsSync(toPath)
+            to: fs.existsSync(toPath),
+            toDir: fs.existsSync(path.dirname(toPath))
           }
         });
         throw copyError;
