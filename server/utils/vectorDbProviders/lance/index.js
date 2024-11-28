@@ -160,15 +160,45 @@ const LanceDb = {
    * @returns
    */
   updateOrCreateCollection: async function (client, data = [], namespace) {
-    const hasNamespace = await this.hasNamespace(namespace);
-    if (hasNamespace) {
-      const collection = await client.openTable(namespace);
-      await collection.add(data);
-      return true;
-    }
+    try {
+      console.log("Updating or creating collection:", namespace);
+      const hasNamespace = await this.hasNamespace(namespace);
+      if (hasNamespace) {
+        const collection = await client.openTable(namespace);
+        await collection.add(data);
+        return true;
+      }
 
-    await client.createTable(namespace, data);
-    return true;
+      await client.createTable(namespace, data);
+      console.log("Collection created successfully:", namespace);
+      return true;
+    } catch (error) {
+      // Check if it's the specific SMB3 copy operation error
+      if (error.message.includes("Unable to copy file") && 
+          error.message.includes("Operation not supported (os error 95)")) {
+        
+        // Extract source and destination paths from the error message
+        const errorMsg = error.message;
+        const fromPath = errorMsg.split('from ')[1].split(' to ')[0];
+        const toPath = errorMsg.split(' to ')[1].split(':')[0];
+        
+        console.log(`Attempting manual file copy from ${fromPath} to ${toPath}`);
+        
+        try {
+          // Read the source file
+          const content = fs.readFileSync(fromPath);
+          // Write to destination
+          fs.writeFileSync(toPath, content);
+          // Remove the temporary file
+          fs.unlinkSync(fromPath);
+          return true;
+        } catch (copyError) {
+          console.error("Manual file copy failed:", copyError);
+          throw copyError;
+        }
+      }
+      throw error;
+    }
   },
   hasNamespace: async function (namespace = null) {
     if (!namespace) return false;
