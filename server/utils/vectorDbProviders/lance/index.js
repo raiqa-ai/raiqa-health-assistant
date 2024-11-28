@@ -220,20 +220,34 @@ const LanceDb = {
       try {
         console.log(`[LanceDB] Executing delete operation for ${vectorIds.length} vectors`);
         await collection.delete(`id IN ['${vectorIds.join("','")}']`);
+        
+        // Verify deletion
+        const verifyQuery = await collection.filter(`id IN ['${vectorIds.join("','")}']`);
+        const remainingRows = await verifyQuery.select(['id']).collect();
+        if (remainingRows.length > 0) {
+          console.warn(`[LanceDB] Delete verification failed - ${remainingRows.length} vectors still exist`);
+          throw new Error('Delete verification failed');
+        }
       } catch (error) {
         console.log(`[LanceDB] Primary delete operation failed, attempting manual file operation`);
         await this.handleFileOperation(error, 'delete_vectors');
-        
-        // After manual file operation succeeds, we still need to clean up the DocumentVectors
-        const indexes = documents.map((doc) => doc.id);
-        await DocumentVectors.deleteIds(indexes);
-        console.log(`[LanceDB] Successfully deleted ${indexes.length} vector records after manual operation`);
-        return true;
       }
 
+      // Clean up DocumentVectors regardless of which deletion path succeeded
       const indexes = documents.map((doc) => doc.id);
       await DocumentVectors.deleteIds(indexes);
-      console.log(`[LanceDB] Successfully deleted ${indexes.length} vector records`);
+      
+      // Final verification
+      const remainingDocs = await DocumentVectors.where({ namespace });
+      if (remainingDocs.length > 0) {
+        console.error(`[LanceDB] Document vector cleanup verification failed`, {
+          remaining: remainingDocs.length,
+          namespace
+        });
+        throw new Error('Document vector cleanup verification failed');
+      }
+      
+      console.log(`[LanceDB] Successfully deleted all vectors and cleaned up records`);
       return true;
     } catch (e) {
       console.error("[LanceDB] Failed to delete vectors in namespace", {
@@ -256,22 +270,57 @@ const LanceDb = {
     }
 
     const { DocumentVectors } = require("../../../models/vectors");
-    const table = await client.openTable(namespace);
-    const vectorIds = (await DocumentVectors.where({ docId })).map(
-      (record) => record.vectorId
-    );
+    const knownDocuments = await DocumentVectors.where({ docId });
+    if (knownDocuments.length === 0) {
+      console.log(`[LanceDB] No vectors found for document ${docId}`);
+      return;
+    }
 
-    if (vectorIds.length === 0) return;
-    
     try {
+      const table = await client.openTable(namespace);
+      const vectorIds = knownDocuments.map((record) => record.vectorId);
       console.log(`[LanceDB] Attempting to delete ${vectorIds.length} vectors for document ${docId}`);
-      await table.delete(`id IN (${vectorIds.map((v) => `'${v}'`).join(",")})`);
-      console.log(`[LanceDB] Successfully deleted vectors`);
+      
+      try {
+        await table.delete(`id IN ['${vectorIds.join("','")}']`);
+        
+        // Verify deletion
+        const verifyQuery = await table.filter(`id IN ['${vectorIds.join("','")}']`);
+        const remainingRows = await verifyQuery.select(['id']).collect();
+        if (remainingRows.length > 0) {
+          console.warn(`[LanceDB] Delete verification failed - ${remainingRows.length} vectors still exist`);
+          throw new Error('Delete verification failed');
+        }
+      } catch (error) {
+        console.log(`[LanceDB] Delete operation failed, attempting manual file operation`);
+        await this.handleFileOperation(error, 'delete_document');
+      }
+
+      // Clean up DocumentVectors regardless of which deletion path succeeded
+      const indexes = knownDocuments.map((doc) => doc.id);
+      await DocumentVectors.deleteIds(indexes);
+      
+      // Final verification
+      const remainingDocs = await DocumentVectors.where({ docId });
+      if (remainingDocs.length > 0) {
+        console.error(`[LanceDB] Document vector cleanup verification failed`, {
+          remaining: remainingDocs.length,
+          docId,
+          namespace
+        });
+        throw new Error('Document vector cleanup verification failed');
+      }
+      
+      console.log(`[LanceDB] Successfully deleted document vectors and cleaned up records`);
       return true;
-    } catch (error) {
-      console.log(`[LanceDB] Delete operation failed, attempting manual file operation`);
-      await this.handleFileOperation(error, 'delete_document');
-      return true;
+    } catch (e) {
+      console.error(`[LanceDB] Failed to delete document from namespace`, {
+        namespace,
+        docId,
+        error: e.message,
+        stack: e.stack
+      });
+      throw e;
     }
   },
   addDocumentToNamespace: async function (
