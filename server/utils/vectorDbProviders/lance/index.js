@@ -28,7 +28,16 @@ const LanceDb = {
 
     try {
       if (!fs.existsSync(lanceDbPath)) {
-        fs.mkdirSync(lanceDbPath, { recursive: true });
+        fs.mkdirSync(lanceDbPath, { 
+          recursive: true, 
+          mode: 0o755
+        });
+      }
+      
+      try {
+        fs.accessSync(lanceDbPath, fs.constants.W_OK);
+      } catch (e) {
+        throw new Error(`LanceDB directory ${lanceDbPath} is not writable: ${e.message}`);
       }
       
       const client = await lancedb.connect(lanceDbPath);
