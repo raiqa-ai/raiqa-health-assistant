@@ -173,35 +173,12 @@ const LanceDb = {
       console.log("Collection created successfully:", namespace);
       return true;
     } catch (error) {
-      // Check if it's the specific SMB3 copy operation error
-      if (error.message.includes("Unable to copy file") && 
-          error.message.includes("Operation not supported (os error 95)")) {
-        
-        // Extract source and destination paths from the error message
-        // The error message format is: "Unable to copy file from [source] to [dest]:"
-        const match = error.message.match(/Unable to copy file from (.*?) to (.*?):/);
-        if (!match) {
-          console.error("Could not parse file paths from error message:", error.message);
-          throw error;
-        }
-        
-        const [_, fromPath, toPath] = match;
-        console.log(`Attempting manual file copy from ${fromPath} to ${toPath}`);
-        
-        try {          
-          // Read the source file
-          const content = fs.readFileSync(fromPath);
-          // Write to destination
-          fs.writeFileSync(toPath, content);
-          // Remove the temporary file
-          fs.unlinkSync(fromPath);
-          return true;
-        } catch (copyError) {
-          console.error("Manual file copy failed:", copyError);
-          throw copyError;
-        }
+      try {
+        await this.handleFileOperation(error);
+        return true;
+      } catch (e) {
+        throw error;
       }
-      throw error;
     }
   },
   hasNamespace: async function (namespace = null) {
@@ -228,8 +205,40 @@ const LanceDb = {
    * @returns
    */
   deleteVectorsInNamespace: async function (client, namespace = null) {
-    await client.dropTable(namespace);
-    return true;
+    if (!namespace) throw new Error("No namespace value provided.");
+    const { DocumentVectors } = require("../../../models/vectors");
+    const documents = await DocumentVectors.where({ namespace });
+    if (!documents || documents.length === 0) return;
+
+    try {
+      console.log(`[LanceDB] Attempting to delete vectors from namespace: ${namespace}`);
+      console.log(`[LanceDB] Found ${documents.length} vectors to delete`);
+      
+      const collection = await client.openTable(namespace);
+      const vectorIds = documents.map((doc) => doc.vectorId);
+      
+      try {
+        console.log(`[LanceDB] Executing delete operation for ${vectorIds.length} vectors`);
+        await collection.delete(`id IN ['${vectorIds.join("','")}']`);
+      } catch (error) {
+        console.log(`[LanceDB] Primary delete operation failed, attempting manual file operation`);
+        await this.handleFileOperation(error, 'delete_vectors');
+      }
+
+      const indexes = documents.map((doc) => doc.id);
+      await DocumentVectors.deleteIds(indexes);
+      console.log(`[LanceDB] Successfully deleted ${indexes.length} vector records`);
+      return true;
+    } catch (e) {
+      console.error("[LanceDB] Failed to delete vectors in namespace", {
+        namespace,
+        error: e.message,
+        stack: e.stack
+      });
+      throw new Error(
+        `Failed to delete rows in table ${namespace}: predicate=${e.message}`
+      );
+    }
   },
   deleteDocumentFromNamespace: async function (namespace, docId) {
     const { client } = await this.connect();
@@ -435,6 +444,50 @@ const LanceDb = {
     }
 
     return documents;
+  },
+  handleFileOperation: async function(error, operation = 'unknown') {
+    if (error.message.includes("Unable to copy file") && 
+        error.message.includes("Operation not supported (os error 95)")) {
+      
+      console.log(`[LanceDB] Handling SMB3 file operation for ${operation}`);
+      const match = error.message.match(/Unable to copy file from (.*?) to (.*?):/);
+      if (!match) {
+        console.error("[LanceDB] Could not parse file paths from error message:", error.message);
+        throw error;
+      }
+      
+      const [_, fromPath, toPath] = match;
+      console.log(`[LanceDB] Attempting manual file copy:
+        Operation: ${operation}
+        From: ${fromPath}
+        To: ${toPath}
+      `);
+      
+      try {
+        const content = fs.readFileSync(fromPath);
+        console.log(`[LanceDB] Successfully read source file: ${fromPath} (${content.length} bytes)`);
+        
+        fs.writeFileSync(toPath, content);
+        console.log(`[LanceDB] Successfully wrote destination file: ${toPath}`);
+        
+        fs.unlinkSync(fromPath);
+        console.log(`[LanceDB] Successfully cleaned up temporary file: ${fromPath}`);
+        return true;
+      } catch (copyError) {
+        console.error(`[LanceDB] Manual file operation failed for ${operation}:`, {
+          error: copyError.message,
+          code: copyError.code,
+          fromPath,
+          toPath,
+          exists: {
+            from: fs.existsSync(fromPath),
+            to: fs.existsSync(toPath)
+          }
+        });
+        throw copyError;
+      }
+    }
+    throw error;
   },
 };
 
