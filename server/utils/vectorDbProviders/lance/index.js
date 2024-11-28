@@ -207,47 +207,23 @@ const LanceDb = {
   deleteVectorsInNamespace: async function (client, namespace = null) {
     if (!namespace) throw new Error("No namespace value provided.");
     const { DocumentVectors } = require("../../../models/vectors");
-    const documents = await DocumentVectors.where({ namespace });
-    if (!documents || documents.length === 0) return;
-
+    
     try {
       console.log(`[LanceDB] Attempting to delete vectors from namespace: ${namespace}`);
-      console.log(`[LanceDB] Found ${documents.length} vectors to delete`);
-      
       const collection = await client.openTable(namespace);
-      const vectorIds = documents.map((doc) => doc.vectorId);
       
       try {
-        console.log(`[LanceDB] Executing delete operation for ${vectorIds.length} vectors`);
-        await collection.delete(`id IN ['${vectorIds.join("','")}']`);
-        
-        // Verify deletion
-        const verifyQuery = await collection.filter(`id IN ['${vectorIds.join("','")}']`);
-        const remainingRows = await verifyQuery.select(['id']).collect();
-        if (remainingRows.length > 0) {
-          console.warn(`[LanceDB] Delete verification failed - ${remainingRows.length} vectors still exist`);
-          throw new Error('Delete verification failed');
-        }
+        // Delete all vectors in the table
+        await collection.delete('1=1');
+        console.log(`[LanceDB] Successfully deleted all vectors from namespace`);
       } catch (error) {
         console.log(`[LanceDB] Primary delete operation failed, attempting manual file operation`);
         await this.handleFileOperation(error, 'delete_vectors');
       }
-
-      // Clean up DocumentVectors regardless of which deletion path succeeded
-      const indexes = documents.map((doc) => doc.id);
-      await DocumentVectors.deleteIds(indexes);
       
-      // Final verification
-      const remainingDocs = await DocumentVectors.where({ namespace });
-      if (remainingDocs.length > 0) {
-        console.error(`[LanceDB] Document vector cleanup verification failed`, {
-          remaining: remainingDocs.length,
-          namespace
-        });
-        throw new Error('Document vector cleanup verification failed');
-      }
-      
-      console.log(`[LanceDB] Successfully deleted all vectors and cleaned up records`);
+      // We don't need to query by namespace since the workspace deletion 
+      // already handles document vector cleanup
+      console.log(`[LanceDB] Vector deletion complete for namespace ${namespace}`);
       return true;
     } catch (e) {
       console.error("[LanceDB] Failed to delete vectors in namespace", {
