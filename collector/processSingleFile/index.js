@@ -30,12 +30,14 @@ async function processSingleFile(targetFilename, options = {}) {
       reason: "Filename is a reserved filename and cannot be processed.",
       documents: [],
     };
-  if (!fs.existsSync(fullFilePath))
+  if (!fs.existsSync(fullFilePath)){
+    console.log('File path:', fullFilePath);
     return {
       success: false,
       reason: "File does not exist in upload directory.",
       documents: [],
     };
+  }
 
   const fileExtension = path.extname(fullFilePath).toLowerCase();
   if (fullFilePath.includes(".") && !fileExtension) {

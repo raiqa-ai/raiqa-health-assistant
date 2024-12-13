@@ -18,6 +18,23 @@ const { verifyPayloadIntegrity } = require("./middleware/verifyIntegrity");
 const app = express();
 const FILE_LIMIT = "3GB";
 
+const fs = require('fs');
+
+function checkComKeyFiles() {
+  const keyPath = process.env.NODE_ENV === "development"
+    ? path.resolve(__dirname, `storage/comkey`)
+    : path.resolve(process.env.STORAGE_DIR ?? path.resolve(__dirname, `storage`), `comkey`);
+
+  const pubKeyPath = path.join(keyPath, 'ipc-pub.pem');
+  const privKeyPath = path.join(keyPath, 'ipc-priv.pem');
+
+  if (!fs.existsSync(pubKeyPath)) {
+    throw new Error(`Public key not found at ${pubKeyPath}`);
+  }
+}
+
+checkComKeyFiles();
+
 app.use(cors({ origin: true }));
 app.use(
   bodyParser.text({ limit: FILE_LIMIT }),

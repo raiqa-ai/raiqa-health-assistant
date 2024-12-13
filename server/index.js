@@ -30,6 +30,26 @@ const app = express();
 const apiRouter = express.Router();
 const FILE_LIMIT = "3GB";
 
+const fs = require('fs');
+
+function checkComKeyFiles() {
+  const keyPath = process.env.NODE_ENV === "development"
+    ? path.resolve(__dirname, `storage/comkey`)
+    : path.resolve(process.env.STORAGE_DIR ?? path.resolve(__dirname, `storage`), `comkey`);
+
+  const pubKeyPath = path.join(keyPath, 'ipc-pub.pem');
+  const privKeyPath = path.join(keyPath, 'ipc-priv.pem');
+
+  if (!fs.existsSync(pubKeyPath)) {
+    throw new Error(`Public key not found at ${pubKeyPath}`);
+  }
+
+  // Only check private key on server
+  if (!fs.existsSync(privKeyPath)) {
+    throw new Error(`Private key not found at ${privKeyPath}`);
+  }
+}
+
 app.use(cors({ origin: true }));
 app.use(bodyParser.text({ limit: FILE_LIMIT }));
 app.use(bodyParser.json({ limit: FILE_LIMIT }));
@@ -47,6 +67,9 @@ if (!!process.env.ENABLE_HTTPS) {
 }
 
 app.use("/api", apiRouter);
+
+checkComKeyFiles();
+
 systemEndpoints(apiRouter);
 extensionEndpoints(apiRouter);
 workspaceEndpoints(apiRouter);

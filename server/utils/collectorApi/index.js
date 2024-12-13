@@ -62,26 +62,46 @@ class CollectorApi {
       options: this.#attachOptions(),
     });
 
-    return await fetch(`${this.endpoint}/process`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Integrity": this.comkey.sign(data),
-        "X-Payload-Signer": this.comkey.encrypt(
-          new EncryptionManager().xPayload
-        ),
-      },
-      body: data,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Response could not be completed");
-        return res.json();
-      })
-      .then((res) => res)
-      .catch((e) => {
-        this.log(e.message);
-        return { success: false, reason: e.message, documents: [] };
+    try {
+      const integrity = this.comkey.sign(data);
+      const payloadSigner = this.comkey.encrypt(new EncryptionManager().xPayload);
+      
+      console.log('Sending request to collector:', {
+        endpoint: `${this.endpoint}/process`,
+        filename,
+        integrityLength: integrity.length,
+        payloadSignerLength: payloadSigner.length
       });
+
+      const response = await fetch(`${this.endpoint}/process`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Integrity": integrity,
+          "X-Payload-Signer": payloadSigner,
+        },
+        body: data,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Collector response error:', {
+          status: response.status,
+          headers: Object.fromEntries(response.headers.entries()),
+          error: errorText
+        });
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (e) {
+      this.log(`Error processing document: ${e.message}`);
+      return { 
+        success: false, 
+        reason: `Failed to process document: ${e.message}`, 
+        documents: [] 
+      };
+    }
   }
 
   async processLink(link = "") {

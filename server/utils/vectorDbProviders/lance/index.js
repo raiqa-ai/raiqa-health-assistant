@@ -5,16 +5,20 @@ const { SystemSettings } = require("../../../models/systemSettings");
 const { storeVectorResult, cachedVectorInformation } = require("../../files");
 const { v4: uuidv4 } = require("uuid");
 const { sourceIdentifier } = require("../../chats");
+const path = require('path');
+const fs = require('fs');
 
 /**
  * LancedDB Client connection object
  * @typedef {import('@lancedb/lancedb').Connection} LanceClient
  */
 
+const lanceDbPath = process.env.NODE_ENV === "development"
+  ? path.resolve(__dirname, "../../../storage/lancedb")
+  : path.resolve(process.env.STORAGE_DIR, "lancedb");
+
 const LanceDb = {
-  uri: `${
-    !!process.env.STORAGE_DIR ? `${process.env.STORAGE_DIR}/` : "./storage/"
-  }lancedb`,
+  uri: lanceDbPath,
   name: "LanceDb",
 
   /** @returns {Promise<{client: LanceClient}>} */
@@ -22,8 +26,32 @@ const LanceDb = {
     if (process.env.VECTOR_DB !== "lancedb")
       throw new Error("LanceDB::Invalid ENV settings");
 
-    const client = await lancedb.connect(this.uri);
-    return { client };
+    try {
+      if (!fs.existsSync(lanceDbPath)) {
+        fs.mkdirSync(lanceDbPath, { 
+          recursive: true, 
+          mode: 0o755
+        });
+      }
+      
+      try {
+        fs.accessSync(lanceDbPath, fs.constants.W_OK);
+      } catch (e) {
+        throw new Error(`LanceDB directory ${lanceDbPath} is not writable: ${e.message}`);
+      }
+      
+      const client = await lancedb.connect(lanceDbPath);
+      return {
+        client,
+        error: null,
+      };
+    } catch (e) {
+      console.error("Failed to connect to LanceDB:", e);
+      return {
+        client: null,
+        error: e.message,
+      };
+    }
   },
   distanceToSimilarity: function (distance = null) {
     if (distance === null || typeof distance !== "number") return 0.0;
@@ -132,15 +160,26 @@ const LanceDb = {
    * @returns
    */
   updateOrCreateCollection: async function (client, data = [], namespace) {
-    const hasNamespace = await this.hasNamespace(namespace);
-    if (hasNamespace) {
-      const collection = await client.openTable(namespace);
-      await collection.add(data);
-      return true;
-    }
+    try {
+      console.log("Updating or creating collection:", namespace);
+      const hasNamespace = await this.hasNamespace(namespace);
+      if (hasNamespace) {
+        const collection = await client.openTable(namespace);
+        await collection.add(data);
+        return true;
+      }
 
-    await client.createTable(namespace, data);
-    return true;
+      await client.createTable(namespace, data);
+      console.log("Collection created successfully:", namespace);
+      return true;
+    } catch (error) {
+      try {
+        await this.handleFileOperation(error);
+        return true;
+      } catch (e) {
+        throw error;
+      }
+    }
   },
   hasNamespace: async function (namespace = null) {
     if (!namespace) return false;
@@ -166,28 +205,76 @@ const LanceDb = {
    * @returns
    */
   deleteVectorsInNamespace: async function (client, namespace = null) {
-    await client.dropTable(namespace);
-    return true;
+    if (!namespace) throw new Error("No namespace value provided.");
+    const { DocumentVectors } = require("../../../models/vectors");
+    
+    try {
+      console.log(`[LanceDB] Attempting to delete vectors from namespace: ${namespace}`);
+      const collection = await client.openTable(namespace);
+      
+      try {
+        // Delete all vectors in the table
+        await collection.delete('1=1');
+        console.log(`[LanceDB] Successfully deleted all vectors from namespace`);
+      } catch (error) {
+        console.log(`[LanceDB] Primary delete operation failed, attempting manual file operation`);
+        await this.handleFileOperation(error, 'delete_vectors');
+      }
+      
+      // We don't need to query by namespace since the workspace deletion 
+      // already handles document vector cleanup
+      console.log(`[LanceDB] Vector deletion complete for namespace ${namespace}`);
+      return true;
+    } catch (e) {
+      console.error("[LanceDB] Failed to delete vectors in namespace", {
+        namespace,
+        error: e.message,
+        stack: e.stack,
+        operation: 'delete_vectors'
+      });
+      throw new Error(
+        `Failed to delete rows in table ${namespace}: predicate=${e.message}`
+      );
+    }
   },
   deleteDocumentFromNamespace: async function (namespace, docId) {
     const { client } = await this.connect();
     const exists = await this.namespaceExists(client, namespace);
     if (!exists) {
-      console.error(
-        `LanceDB:deleteDocumentFromNamespace - namespace ${namespace} does not exist.`
-      );
+      console.log(`[LanceDB] Namespace ${namespace} does not exist for deletion`);
       return;
     }
 
     const { DocumentVectors } = require("../../../models/vectors");
-    const table = await client.openTable(namespace);
-    const vectorIds = (await DocumentVectors.where({ docId })).map(
-      (record) => record.vectorId
-    );
+    const knownDocuments = await DocumentVectors.where({ docId });
+    if (knownDocuments.length === 0) return;
 
-    if (vectorIds.length === 0) return;
-    await table.delete(`id IN (${vectorIds.map((v) => `'${v}'`).join(",")})`);
-    return true;
+    try {
+      const table = await client.openTable(namespace);
+      const vectorIds = knownDocuments.map((record) => record.vectorId);
+      console.log(`[LanceDB] Attempting to delete ${vectorIds.length} vectors for document ${docId}`);
+      
+      try {
+        const deleteQuery = `id IN ('${vectorIds.join("', '")}')`;
+        console.log(`[LanceDB] Executing delete query: ${deleteQuery}`);
+        await table.delete(deleteQuery);
+      } catch (error) {
+        console.log(`[LanceDB] Delete operation failed, attempting manual file operation`);
+        await this.handleFileOperation(error, 'delete_document');
+      }
+
+      const indexes = knownDocuments.map((doc) => doc.id);
+      await DocumentVectors.deleteIds(indexes);
+      return true;
+    } catch (e) {
+      console.error(`[LanceDB] Failed to delete document from namespace`, {
+        namespace,
+        docId,
+        error: e.message,
+        stack: e.stack
+      });
+      throw e;
+    }
   },
   addDocumentToNamespace: async function (
     namespace,
@@ -344,14 +431,56 @@ const LanceDb = {
   },
   "delete-namespace": async function (reqBody = {}) {
     const { namespace = null } = reqBody;
+    if (!namespace) throw new Error("No namespace value provided");
+    
     const { client } = await this.connect();
-    if (!(await this.namespaceExists(client, namespace)))
-      throw new Error("Namespace by that name does not exist.");
-
-    await this.deleteVectorsInNamespace(client, namespace);
-    return {
-      message: `Namespace ${namespace} was deleted.`,
-    };
+    if (!(await this.namespaceExists(client, namespace))) return;
+    
+    try {
+      console.log(`[LanceDB] Attempting to delete namespace: ${namespace}`);
+      
+      // Step 1: Try API deletion first
+      await this.deleteVectorsInNamespace(client, namespace);
+      
+      // Step 2: Physical cleanup
+      const namespacePath = path.join(process.env.STORAGE_DIR || './storage', 'lancedb', `${namespace}.lance`);
+      if (fs.existsSync(namespacePath)) {
+        console.log(`[LanceDB] Removing namespace directory: ${namespacePath}`);
+        try {
+          // First try recursive deletion
+          fs.rmSync(namespacePath, { recursive: true, force: true });
+        } catch (fsError) {
+          console.error(`[LanceDB] Failed standard directory removal, attempting manual cleanup`, {
+            error: fsError.message,
+            path: namespacePath
+          });
+          
+          // If recursive deletion fails, try manual file-by-file cleanup
+          const files = fs.readdirSync(namespacePath);
+          for (const file of files) {
+            const filePath = path.join(namespacePath, file);
+            try {
+              fs.unlinkSync(filePath);
+            } catch (e) {
+              console.warn(`[LanceDB] Could not remove file: ${filePath}`, e.message);
+            }
+          }
+          // Try directory removal again after files are gone
+          fs.rmdirSync(namespacePath);
+        }
+      }
+      
+      return {
+        message: `Namespace ${namespace} was deleted successfully.`
+      };
+    } catch (e) {
+      console.error(`[LanceDB] Failed to delete namespace`, {
+        namespace,
+        error: e.message,
+        stack: e.stack
+      });
+      throw e;
+    }
   },
   reset: async function () {
     const { client } = await this.connect();
@@ -373,6 +502,62 @@ const LanceDb = {
     }
 
     return documents;
+  },
+  handleFileOperation: async function(error, operation = 'unknown') {
+    if (error.message.includes("Unable to copy file") && 
+        error.message.includes("Operation not supported (os error 95)")) {
+      
+      console.log(`[LanceDB] Handling SMB3 file operation for ${operation}`);
+      const match = error.message.match(/Unable to copy file from (.*?) to (.*?):/);
+      if (!match) {
+        console.error("[LanceDB] Could not parse file paths from error message:", error.message);
+        throw error;
+      }
+      
+      const [_, fromPath, toPath] = match;
+      console.log(`[LanceDB] Attempting manual file operation:
+        Operation: ${operation}
+        From: ${fromPath}
+        To: ${toPath}
+      `);
+      
+      try {
+        // For manifest files, we need to ensure the directory exists
+        const toDir = path.dirname(toPath);
+        if (!fs.existsSync(toDir)) {
+          fs.mkdirSync(toDir, { recursive: true });
+        }
+        
+        const content = fs.readFileSync(fromPath);
+        console.log(`[LanceDB] Read source file: ${fromPath} (${content.length} bytes)`);
+        
+        fs.writeFileSync(toPath, content);
+        console.log(`[LanceDB] Wrote destination file: ${toPath}`);
+        
+        // Only delete source if it still exists
+        if (fs.existsSync(fromPath)) {
+          fs.unlinkSync(fromPath);
+          console.log(`[LanceDB] Cleaned up temporary file: ${fromPath}`);
+        }
+        
+        return true;
+      } catch (copyError) {
+        console.error(`[LanceDB] Manual file operation failed:`, {
+          operation,
+          error: copyError.message,
+          code: copyError.code,
+          fromPath,
+          toPath,
+          exists: {
+            from: fs.existsSync(fromPath),
+            to: fs.existsSync(toPath),
+            toDir: fs.existsSync(path.dirname(toPath))
+          }
+        });
+        throw copyError;
+      }
+    }
+    throw error;
   },
 };
 
