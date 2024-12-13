@@ -81,6 +81,8 @@ jobs:
           containerAppName: raiqa-health-assistant-uat-fe
           resourceGroup: raiqa-health-uat-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-uat-env  # Add your actual environment name from infra config
+          registryUrl: ${{ env.REGISTRY }}
 
 
   deploy-prod:
@@ -102,3 +104,5 @@ jobs:
           containerAppName: raiqa-health-assistant-prod-fe
           resourceGroup: raiqa-health-prod-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-prod-env  # Add your actual environment name from infra config
+          registryUrl: ${{ env.REGISTRY }}
