@@ -57,7 +57,7 @@ jobs:
         run: |          
           npm install
           # URL encode the password and store it
-          ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD }}'))")
+          ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_QA }}'))")
           export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-qa-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
           export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-qa-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
           
@@ -80,17 +80,30 @@ jobs:
     environment: uat
     
     steps:
+      - uses: actions/checkout@v4
       - name: Azure login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Run Prisma migrations and seed
+        run: |          
+          npm install
+          # URL encode the password and store it
+          ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_UAT }}'))")
+          export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-uat-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
+          export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-uat-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
+          
+          # Run the migration and seeding
+          yarn prisma:setup
           
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-server-uat
+          containerAppName: raiqa-health-assistant-uat-server
           resourceGroup: raiqa-health-uat-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-uat-env
+          registryUrl: ${{ env.REGISTRY }}
 
   deploy-prod:
     needs: build-and-push
@@ -99,14 +112,27 @@ jobs:
     environment: prod
     
     steps:
+      - uses: actions/checkout@v4
       - name: Azure login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Run Prisma migrations and seed
+        run: |          
+          npm install
+          # URL encode the password and store it
+          ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_PROD }}'))")
+          export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-prod-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
+          export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-prod-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
+          
+          # Run the migration and seeding
+          yarn prisma:setup
           
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-server-prod
+          containerAppName: raiqa-health-assistant-prod-server
           resourceGroup: raiqa-health-prod-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-prod-env
+          registryUrl: ${{ env.REGISTRY }}
