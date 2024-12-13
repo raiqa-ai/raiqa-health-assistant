@@ -267,6 +267,10 @@ const KEY_MAPPING = {
     envKey: "GENERIC_OPEN_AI_EMBEDDING_API_KEY",
     checks: [],
   },
+  GenericOpenAiEmbeddingMaxConcurrentChunks: {
+    envKey: "GENERIC_OPEN_AI_EMBEDDING_MAX_CONCURRENT_CHUNKS",
+    checks: [nonZero],
+  },
 
   // Vector Database Selection Settings
   VectorDB: {
@@ -574,6 +578,29 @@ const KEY_MAPPING = {
     envKey: "XAI_LLM_MODEL_PREF",
     checks: [isNotEmpty],
   },
+
+  // Nvidia NIM Options
+  NvidiaNimLLMBasePath: {
+    envKey: "NVIDIA_NIM_LLM_BASE_PATH",
+    checks: [isValidURL],
+    postUpdate: [
+      (_, __, nextValue) => {
+        const { parseNvidiaNimBasePath } = require("../AiProviders/nvidiaNim");
+        process.env.NVIDIA_NIM_LLM_BASE_PATH =
+          parseNvidiaNimBasePath(nextValue);
+      },
+    ],
+  },
+  NvidiaNimLLMModelPref: {
+    envKey: "NVIDIA_NIM_LLM_MODEL_PREF",
+    checks: [],
+    postUpdate: [
+      async (_, __, nextValue) => {
+        const { NvidiaNimLLM } = require("../AiProviders/nvidiaNim");
+        await NvidiaNimLLM.setModelTokenLimit(nextValue);
+      },
+    ],
+  },
 };
 
 function isNotEmpty(input = "") {
@@ -680,6 +707,7 @@ function supportedLLM(input = "") {
     "deepseek",
     "apipie",
     "xai",
+    "nvidia-nim",
   ].includes(input);
   return validSelection ? null : `${input} is not a valid LLM provider.`;
 }
@@ -701,6 +729,11 @@ function validGeminiModel(input = "") {
     "gemini-1.5-pro-exp-0827",
     "gemini-1.5-flash-exp-0827",
     "gemini-1.5-flash-8b-exp-0827",
+    "gemini-exp-1114",
+    "gemini-exp-1121",
+    "gemini-exp-1206",
+    "learnlm-1.5-pro-experimental",
+    "gemini-2.0-flash-exp",
   ];
   return validModels.includes(input)
     ? null
@@ -724,9 +757,13 @@ function validAnthropicModel(input = "") {
     "claude-instant-1.2",
     "claude-2.0",
     "claude-2.1",
-    "claude-3-opus-20240229",
-    "claude-3-sonnet-20240229",
     "claude-3-haiku-20240307",
+    "claude-3-sonnet-20240229",
+    "claude-3-opus-latest",
+    "claude-3-5-haiku-latest",
+    "claude-3-5-haiku-20241022",
+    "claude-3-5-sonnet-latest",
+    "claude-3-5-sonnet-20241022",
     "claude-3-5-sonnet-20240620",
   ];
   return validModels.includes(input)
@@ -746,6 +783,7 @@ function supportedEmbeddingModel(input = "") {
     "voyageai",
     "litellm",
     "generic-openai",
+    "mistral",
   ];
   return supported.includes(input)
     ? null
@@ -927,6 +965,11 @@ function dumpENV() {
     "DISABLE_VIEW_CHAT_HISTORY",
     // Simple SSO
     "SIMPLE_SSO_ENABLED",
+    // Community Hub
+    "COMMUNITY_HUB_BUNDLE_DOWNLOADS_ENABLED",
+
+    // Nvidia NIM Keys that are automatically managed
+    "NVIDIA_NIM_LLM_MODEL_TOKEN_LIMIT",
   ];
 
   // Simple sanitization of each value to prevent ENV injection via newline or quote escaping.

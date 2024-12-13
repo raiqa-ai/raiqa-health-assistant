@@ -16,6 +16,7 @@ const { ChatBedrockConverse } = require("@langchain/aws");
 const { ChatOllama } = require("@langchain/community/chat_models/ollama");
 const { toValidNumber } = require("../../../http");
 const { getLLMProviderClass } = require("../../../helpers");
+const { parseLMStudioBasePath } = require("../../../AiProviders/lmStudio");
 
 const DEFAULT_WORKSPACE_PROMPT =
   "You are a helpful ai assistant who can assist the user and use tools available to help answer the users prompts and questions.";
@@ -154,6 +155,14 @@ class Provider {
           apiKey: process.env.XAI_LLM_API_KEY ?? null,
           ...config,
         });
+      case "novita":
+        return new ChatOpenAI({
+          configuration: {
+            baseURL: "https://api.novita.ai/v3/openai",
+          },
+          apiKey: process.env.NOVITA_LLM_API_KEY ?? null,
+          ...config,
+        });
 
       // OSS Model Runners
       // case "anythingllm_ollama":
@@ -169,7 +178,7 @@ class Provider {
       case "lmstudio":
         return new ChatOpenAI({
           configuration: {
-            baseURL: process.env.LMSTUDIO_BASE_PATH?.replace(/\/+$/, ""),
+            baseURL: parseLMStudioBasePath(process.env.LMSTUDIO_BASE_PATH),
           },
           apiKey: "not-used", // Needs to be specified or else will assume OpenAI
           ...config,
@@ -206,12 +215,12 @@ class Provider {
           apiKey: process.env.LITE_LLM_API_KEY ?? null,
           ...config,
         });
-      case "novita":
+      case "nvidia-nim":
         return new ChatOpenAI({
           configuration: {
-            baseURL: "https://api.novita.ai/v3/openai",
+            baseURL: process.env.NVIDIA_NIM_LLM_BASE_PATH,
           },
-          apiKey: process.env.NOVITA_LLM_API_KEY ?? null,
+          apiKey: null,
           ...config,
         });
 
