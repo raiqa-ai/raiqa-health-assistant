@@ -45,21 +45,21 @@ class MetaGenerator {
       {
         tag: "title",
         props: null,
-        content: "Raiqa Assistant | Your personal LLM trained on anything",
+        content: "Raiqa Assistant | Your personal LLM trained on health data",
       },
 
       {
         tag: "meta",
         props: {
           name: "title",
-          content: "Raiqa Assistant | Your personal LLM trained on anything",
+          content: "Raiqa Assistant | Your personal LLM trained on health data",
         },
       },
       {
         tag: "meta",
         props: {
           description: "title",
-          content: "Raiqa Assistant | Your personal LLM trained on anything",
+          content: "Raiqa Assistant | Your personal LLM trained on health data",
         },
       },
 
@@ -73,24 +73,24 @@ class MetaGenerator {
         tag: "meta",
         props: {
           property: "og:title",
-          content: "Raiqa Assistant | Your personal LLM trained on anything",
+          content: "Raiqa Assistant | Your personal LLM trained on health data",
         },
       },
       {
         tag: "meta",
         props: {
           property: "og:description",
-          content: "Raiqa Assistant | Your personal LLM trained on anything",
+          content: "Raiqa Assistant | Your personal LLM trained on health data",
         },
       },
-      {
-        tag: "meta",
-        props: {
-          property: "og:image",
-          content:
-            "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/images/promo.png",
-        },
-      },
+      // {
+      //   tag: "meta",
+      //   props: {
+      //     property: "og:image",
+      //     content:
+      //       "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/images/promo.png",
+      //   },
+      // },
 
       // <!-- Twitter -->
       {
@@ -105,24 +105,24 @@ class MetaGenerator {
         tag: "meta",
         props: {
           property: "twitter:title",
-          content: "Raiqa Assistant | Your personal LLM trained on anything",
+          content: "Raiqa Assistant | Your personal LLM trained on health data",
         },
       },
       {
         tag: "meta",
         props: {
           property: "twitter:description",
-          content: "Raiqa Assistant | Your personal LLM trained on anything",
+          content: "Raiqa Assistant | Your personal LLM trained on health data",
         },
       },
-      {
-        tag: "meta",
-        props: {
-          property: "twitter:image",
-          content:
-            "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/images/promo.png",
-        },
-      },
+      // {
+      //   tag: "meta",
+      //   props: {
+      //     property: "twitter:image",
+      //     content:
+      //       "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/images/promo.png",
+      //   },
+      // },
 
       { tag: "link", props: { rel: "icon", href: "/favicon.png" } },
       { tag: "link", props: { rel: "apple-touch-icon", href: "/favicon.png" } },
@@ -191,7 +191,7 @@ class MetaGenerator {
           props: null,
           content:
             customTitle ??
-            "Raiqa Assistant | Your personal LLM trained on anything",
+            "Raiqa Assistant | Your personal LLM trained on health data",
         },
       ];
     }
