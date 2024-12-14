@@ -18,22 +18,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Generate version
         id: version
         run: echo "version=$(date +'%Y%m%d').${{ github.run_number }}" >> $GITHUB_OUTPUT
-      
+
       - name: Azure login
         uses: azure/login@v1
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-          
+
       - name: Login to ACR
         run: az acr login --name raiqahealthacr
-          
+
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
@@ -46,7 +46,7 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/release/qa')
     runs-on: ubuntu-latest
     environment: qa
-    
+
     steps:
       - uses: actions/checkout@v4
       - name: Azure login
@@ -54,16 +54,16 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
       - name: Run Prisma migrations and seed
-        run: |          
+        run: |
           npm install
           # URL encode the password and store it
           ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_QA }}'))")
           export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-qa-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
           export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-qa-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
-          
+
           # Run the migration and seeding
           yarn prisma:setup
-          
+
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
@@ -78,7 +78,7 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/release/uat')
     runs-on: ubuntu-latest
     environment: uat
-    
+
     steps:
       - uses: actions/checkout@v4
       - name: Azure login
@@ -86,16 +86,16 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
       - name: Run Prisma migrations and seed
-        run: |          
+        run: |
           npm install
           # URL encode the password and store it
           ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_UAT }}'))")
           export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-uat-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
           export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-uat-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
-          
+
           # Run the migration and seeding
           yarn prisma:setup
-          
+
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
@@ -110,7 +110,7 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/release/prod')
     runs-on: ubuntu-latest
     environment: prod
-    
+
     steps:
       - uses: actions/checkout@v4
       - name: Azure login
@@ -118,16 +118,16 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
       - name: Run Prisma migrations and seed
-        run: |          
+        run: |
           npm install
           # URL encode the password and store it
           ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_PROD }}'))")
           export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-prod-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
           export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-prod-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
-          
+
           # Run the migration and seeding
           yarn prisma:setup
-          
+
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
