@@ -67,7 +67,7 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-health-assistant-qa-server
+          containerAppName: raiqa-health-assistant-qa-svr
           resourceGroup: raiqa-health-qa-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
           containerAppEnvironment: raiqa-health-qa-env
@@ -88,9 +88,11 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-server-uat
+          containerAppName: raiqa-health-assistant-uat-svr
           resourceGroup: raiqa-health-uat-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-uat-env
+          registryUrl: ${{ env.REGISTRY }}
 
   deploy-prod:
     needs: build-and-push
@@ -107,6 +109,8 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-server-prod
+          containerAppName: raiqa-health-assistant-prod-svr
           resourceGroup: raiqa-health-prod-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+          containerAppEnvironment: raiqa-health-prod-env
+          registryUrl: ${{ env.REGISTRY }}
