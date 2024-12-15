@@ -57,7 +57,7 @@ jobs:
         run: |
           npm install
           # URL encode the password and store it
-          ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD }}'))")
+          ENCODED_PASSWORD=$(node -e "console.log(encodeURIComponent('${{ secrets.PSQL_PASSWORD_QA }}'))")
           export DATABASE_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-qa-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
           export DIRECT_URL="postgresql://${{ secrets.PSQL_ADMIN }}:${ENCODED_PASSWORD}@raiqa-health-qa-psql.postgres.database.azure.com:5432/raiqa_assistant_db?sslmode=require&connection_limit=5"
 
