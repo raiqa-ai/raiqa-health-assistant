@@ -77,10 +77,10 @@ jobs:
         run: |
           # First set the non-sensitive variables from .env.qa
           ENV_VARS=""
-          echo "Reading environment variables from .env.qa..."
+          echo "Reading environment variables from server/.env.qa..."
           
-            if [ ! -f ".env.qa" ]; then
-              echo "Error: .env.qa file not found at path: .env.qa"
+            if [ ! -f "server/.env.qa" ]; then
+              echo "Error: server/.env.qa file not found at path: server/.env.qa"
               exit 1
             fi
             
@@ -89,7 +89,7 @@ jobs:
               [[ -z "$line" || "$line" =~ ^#.*$ ]] && continue
               echo "Processing env var: ${line%%=*}"  # Only show variable name, not value
             ENV_VARS+="$line "
-            done < .env.qa
+            done < server/.env.qa
 
           echo "Updating container app environment variables..."
           # Update the container app with all environment variables
@@ -130,8 +130,8 @@ jobs:
           ENV_VARS=""
           echo "Reading environment variables from .env.uat..."
           
-          if [ ! -f ".env.uat" ]; then
-            echo "Error: .env.uat file not found at path: .env.uat"
+          if [ ! -f "server/.env.uat" ]; then
+            echo "Error: server/.env.uat file not found at path: server/.env.uat"
             exit 1
           fi
           
@@ -140,7 +140,7 @@ jobs:
               [[ -z "$line" || "$line" =~ ^#.*$ ]] && continue
               echo "Processing env var: ${line%%=*}"  # Only show variable name, not value
             ENV_VARS+="$line "
-            done < .env.uat
+            done < server/.env.uat
 
           echo "Updating container app environment variables..."
           # Update the container app with all environment variables
@@ -181,8 +181,8 @@ jobs:
           ENV_VARS=""
           echo "Reading environment variables from .env.prod..."
           
-          if [ ! -f ".env.prod" ]; then
-            echo "Error: .env.prod file not found at path: .env.prod"
+          if [ ! -f "server/.env.prod" ]; then
+            echo "Error: server/.env.prod file not found at path: server/.env.prod"
             exit 1
           fi
           
@@ -191,7 +191,7 @@ jobs:
               [[ -z "$line" || "$line" =~ ^#.*$ ]] && continue
               echo "Processing env var: ${line%%=*}"  # Only show variable name, not value
             ENV_VARS+="$line "
-            done < .env.prod
+            done < server/.env.prod
 
           echo "Updating container app environment variables..."
           # Update the container app with all environment variables

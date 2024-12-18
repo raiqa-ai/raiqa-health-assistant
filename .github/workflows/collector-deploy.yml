@@ -62,6 +62,36 @@ jobs:
           containerAppEnvironment: raiqa-health-qa-env
           registryUrl: ${{ env.REGISTRY }}
 
+      - name: Set Container App Environment Variables
+        run: |
+          # First set the non-sensitive variables from .env.qa
+          ENV_VARS=""
+          echo "Reading environment variables from collector/.env.qa..."
+          
+          if [ ! -f "collector/.env.qa" ]; then
+            echo "Error: collector/.env.qa file not found at path: collector/.env.qa"
+            exit 1
+          fi
+          
+            while IFS= read -r line || [ -n "$line" ]; do
+              # Skip empty lines and comments
+              [[ -z "$line" || "$line" =~ ^#.*$ ]] && continue
+              echo "Processing env var: ${line%%=*}"  # Only show variable name, not value
+            ENV_VARS+="$line "
+            done < collector/.env.qa
+
+          echo "Updating container app environment variables..."
+          # Update the container app with all environment variables
+          if ! az containerapp update \
+              --name raiqa-health-assistant-qa-coll \
+              --resource-group raiqa-health-qa-rg \
+              --set-env-vars $ENV_VARS; then
+              echo "Error: Failed to update container app environment variables"
+              exit 1
+            fi
+
+          echo "Successfully updated container app environment variables"
+
   deploy-uat:
     needs: build-and-push
     if: startsWith(github.ref, 'refs/heads/release/uat')
@@ -77,9 +107,39 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-collector-uat
+          containerAppName: raiqa-health-assistant-uat-coll
           resourceGroup: raiqa-health-uat-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+      
+      - name: Set Container App Environment Variables
+        run: |
+          # First set the non-sensitive variables from .env.uat
+          ENV_VARS=""
+          echo "Reading environment variables from collector/.env.uat..."
+          
+          if [ ! -f "collector/.env.uat" ]; then
+            echo "Error: collector/.env.uat file not found at path: collector/.env.uat"
+            exit 1
+          fi
+          
+            while IFS= read -r line || [ -n "$line" ]; do
+              # Skip empty lines and comments
+              [[ -z "$line" || "$line" =~ ^#.*$ ]] && continue
+              echo "Processing env var: ${line%%=*}"  # Only show variable name, not value
+            ENV_VARS+="$line "
+            done < collector/.env.uat
+
+          echo "Updating container app environment variables..."
+          # Update the container app with all environment variables
+          if ! az containerapp update \
+              --name raiqa-health-assistant-uat-coll \
+              --resource-group raiqa-health-uat-rg \
+              --set-env-vars $ENV_VARS; then
+              echo "Error: Failed to update container app environment variables"
+              exit 1
+            fi
+
+          echo "Successfully updated container app environment variables"
 
   deploy-prod:
     needs: build-and-push
@@ -96,6 +156,36 @@ jobs:
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v1
         with:
-          containerAppName: raiqa-assistant-collector-prod
+          containerAppName: raiqa-health-assistant-prod-coll
           resourceGroup: raiqa-health-prod-rg
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }}
+
+      - name: Set Container App Environment Variables
+        run: |
+          # First set the non-sensitive variables from .env.prod
+          ENV_VARS=""
+          echo "Reading environment variables from collector/.env.prod..."
+          
+          if [ ! -f "collector/.env.prod" ]; then
+            echo "Error: collector/.env.prod file not found at path: collector/.env.prod"
+            exit 1
+          fi
+          
+            while IFS= read -r line || [ -n "$line" ]; do
+              # Skip empty lines and comments
+              [[ -z "$line" || "$line" =~ ^#.*$ ]] && continue
+              echo "Processing env var: ${line%%=*}"  # Only show variable name, not value
+            ENV_VARS+="$line "
+            done < collector/.env.prod
+
+          echo "Updating container app environment variables..."
+          # Update the container app with all environment variables
+          if ! az containerapp update \
+              --name raiqa-health-assistant-prod-coll \
+              --resource-group raiqa-health-prod-rg \
+              --set-env-vars $ENV_VARS; then
+              echo "Error: Failed to update container app environment variables"
+              exit 1
+            fi
+
+          echo "Successfully updated container app environment variables"
