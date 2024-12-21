@@ -70,7 +70,8 @@ class CollectorApi {
         endpoint: `${this.endpoint}/process`,
         filename,
         integrityLength: integrity.length,
-        payloadSignerLength: payloadSigner.length
+        payloadSignerLength: payloadSigner.length,
+        requestData: data
       });
 
       const response = await fetch(`${this.endpoint}/process`, {
@@ -83,17 +84,25 @@ class CollectorApi {
         body: data,
       });
 
+      const rawResponse = await response.text();
+      console.log('Raw collector response:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: rawResponse
+      });
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Collector response error:', {
-          status: response.status,
-          headers: Object.fromEntries(response.headers.entries()),
-          error: errorText
-        });
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        throw new Error(`HTTP ${response.status}: ${rawResponse}`);
       }
 
-      return await response.json();
+      let jsonResponse;
+      try {
+        jsonResponse = JSON.parse(rawResponse);
+      } catch (e) {
+        throw new Error(`Failed to parse response as JSON: ${rawResponse}`);
+      }
+
+      return jsonResponse;
     } catch (e) {
       this.log(`Error processing document: ${e.message}`);
       return { 
