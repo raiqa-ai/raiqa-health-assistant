@@ -71,7 +71,7 @@ app.post(
         documents: [],
       });
     }
-    return;
+    //return;
   }
 );
 

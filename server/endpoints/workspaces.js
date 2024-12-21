@@ -153,10 +153,10 @@ function workspaceEndpoints(app) {
           exists: fs.existsSync(filePath)
         });
 
-        const { success, reason } = await Collector.processDocument(originalname);
-        console.log('Collector processing result:', { success, reason });
+        const { success, reason, documents } = await Collector.processDocument(originalname);
+        console.log('Collector processing result:', { success, reason, documents });
 
-        if (!success) {
+        if (!success || documents?.length === 0) {
           response.status(500).json({ success: false, error: reason }).end();
           return;
         }
@@ -948,10 +948,9 @@ function workspaceEndpoints(app) {
           response.locals?.user?.id
         );
 
-        const document = documents[0];
         const { failedToEmbed = [], errors = [] } = await Document.addDocuments(
           currWorkspace,
-          [document.location],
+          documents.map(doc => doc.location),
           response.locals?.user?.id
         );
 
@@ -963,7 +962,7 @@ function workspaceEndpoints(app) {
         response.status(200).json({
           success: true,
           error: null,
-          document: { id: document.id, location: document.location },
+          document: { id: documents[0].id, location: documents[0].location },
         });
       } catch (e) {
         console.error(e.message, e);
