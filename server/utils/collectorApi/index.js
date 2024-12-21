@@ -1,4 +1,6 @@
 const { EncryptionManager } = require("../EncryptionManager");
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 // When running locally will occupy the 0.0.0.0 hostname space but when deployed inside
 // of docker this endpoint is not exposed so it is only on the Docker instances internal network
@@ -96,10 +98,18 @@ class CollectorApi {
       }
 
       if (rawResponse === "OK") {
+        const document = {
+          id: uuidv4(),
+          filename,
+          path: process.env.NODE_ENV === "development"
+            ? `/app/collector/hotdir/${filename}`
+            : path.join(process.env.STORAGE_DIR, 'documents', filename)
+        };
+        
         return {
           success: true,
           reason: null,
-          documents: []
+          documents: [document]
         };
       }
 
