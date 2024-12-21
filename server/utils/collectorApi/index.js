@@ -95,6 +95,14 @@ class CollectorApi {
         throw new Error(`HTTP ${response.status}: ${rawResponse}`);
       }
 
+      if (rawResponse === "OK") {
+        return {
+          success: true,
+          reason: null,
+          documents: []
+        };
+      }
+
       let jsonResponse;
       try {
         jsonResponse = JSON.parse(rawResponse);
