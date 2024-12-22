@@ -100,13 +100,15 @@ class CollectorApi {
 
       if (rawResponse === "OK") {
         const customDocsPath = 'custom-documents';
+        const jsonFilename = `${path.parse(filename).name}.json`;
+        
         const document = {
           id: uuidv4(),
-          filename,
-          location: `${customDocsPath}/${filename}`,
+          filename: jsonFilename,
+          location: `${customDocsPath}/${jsonFilename}`,
           path: process.env.NODE_ENV === "development"
-            ? `/app/collector/hotdir/${filename}`
-            : path.join(process.env.STORAGE_DIR, 'documents', customDocsPath, filename)
+            ? `/app/collector/hotdir/${jsonFilename}`
+            : path.join(process.env.STORAGE_DIR, 'documents', customDocsPath, jsonFilename)
         };
         
         const customDocsDir = path.join(
@@ -124,10 +126,23 @@ class CollectorApi {
           ? `/app/collector/hotdir/${filename}`
           : path.join(process.env.STORAGE_DIR, 'documents', filename);
           
-        const targetPath = path.join(customDocsDir, filename);
+        const targetJsonPath = path.join(customDocsDir, jsonFilename);
         
         if (fs.existsSync(sourcePath)) {
-          fs.renameSync(sourcePath, targetPath);
+          // Create JSON metadata file
+          const jsonContent = {
+            title: path.parse(filename).name,
+            type: "uploaded_document",
+            source: "manual_upload",
+            pageContent: fs.readFileSync(sourcePath, 'utf8'),
+            metadata: {
+              originalName: filename,
+              uploadDate: new Date().toISOString(),
+              fileType: path.extname(filename).substring(1)
+            }
+          };
+          
+          fs.writeFileSync(targetJsonPath, JSON.stringify(jsonContent, null, 2));
         }
         
         return {
