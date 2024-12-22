@@ -129,16 +129,17 @@ class CollectorApi {
         const targetJsonPath = path.join(customDocsDir, jsonFilename);
         
         if (fs.existsSync(sourcePath)) {
-          // Create JSON metadata file
+          // Create JSON metadata file with base64 encoded content for binary files
           const jsonContent = {
             title: path.parse(filename).name,
             type: "uploaded_document",
             source: "manual_upload",
-            pageContent: fs.readFileSync(sourcePath, 'utf8'),
+            pageContent: fs.readFileSync(sourcePath).toString('base64'),
             metadata: {
               originalName: filename,
               uploadDate: new Date().toISOString(),
-              fileType: path.extname(filename).substring(1)
+              fileType: path.extname(filename).substring(1),
+              encoding: 'base64'
             }
           };
           
