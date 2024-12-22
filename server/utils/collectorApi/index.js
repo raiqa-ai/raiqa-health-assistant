@@ -1,6 +1,7 @@
 const { EncryptionManager } = require("../EncryptionManager");
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const fs = require('fs');
 
 // When running locally will occupy the 0.0.0.0 hostname space but when deployed inside
 // of docker this endpoint is not exposed so it is only on the Docker instances internal network
@@ -98,13 +99,36 @@ class CollectorApi {
       }
 
       if (rawResponse === "OK") {
+        const customDocsPath = 'custom-documents';
         const document = {
           id: uuidv4(),
           filename,
+          location: `${customDocsPath}/${filename}`,
           path: process.env.NODE_ENV === "development"
             ? `/app/collector/hotdir/${filename}`
-            : path.join(process.env.STORAGE_DIR, 'documents', filename)
+            : path.join(process.env.STORAGE_DIR, 'documents', customDocsPath, filename)
         };
+        
+        const customDocsDir = path.join(
+          process.env.NODE_ENV === "development" 
+            ? path.resolve(__dirname, '../../storage/documents') 
+            : path.resolve(process.env.STORAGE_DIR, 'documents'),
+          customDocsPath
+        );
+        
+        if (!fs.existsSync(customDocsDir)) {
+          fs.mkdirSync(customDocsDir, { recursive: true });
+        }
+
+        const sourcePath = process.env.NODE_ENV === "development"
+          ? `/app/collector/hotdir/${filename}`
+          : path.join(process.env.STORAGE_DIR, 'documents', filename);
+          
+        const targetPath = path.join(customDocsDir, filename);
+        
+        if (fs.existsSync(sourcePath)) {
+          fs.renameSync(sourcePath, targetPath);
+        }
         
         return {
           success: true,
