@@ -137,19 +137,20 @@ class CollectorApi {
             docAuthor: "manual upload",
             description: `Manually uploaded ${path.extname(filename).substring(1)} file`,
             docSource: "file uploaded by the user",
-            chunkSource: "",
+            chunkSource: `file://${sourcePath}`,
             published: new Date().toISOString(),
             type: "uploaded_document",
-            source: "manual_upload",
+            source: `file://${sourcePath}`,
             pageContent: fs.readFileSync(sourcePath).toString('base64'),
             metadata: {
               originalName: filename,
               uploadDate: new Date().toISOString(),
               fileType: path.extname(filename).substring(1),
-              encoding: 'base64'
+              encoding: 'base64',
+              chunkSource: `file://${sourcePath}`
             },
-            wordCount: 0, // This will be updated when processed
-            token_count_estimate: 0 // This will be updated when processed
+            wordCount: 0,
+            token_count_estimate: 0
           };
           
           fs.writeFileSync(targetJsonPath, JSON.stringify(jsonContent, null, 2));
