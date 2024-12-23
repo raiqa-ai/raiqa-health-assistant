@@ -68,8 +68,21 @@ async function viewLocalFiles() {
           chunkSource: metadata.chunkSource,
           metadata: metadata.metadata
         });
+        const normalizedMetadata = {
+          id: metadata.id,
+          title: metadata.title || '',
+          type: 'file',
+          source: metadata.source || 'local://document',
+          chunkSource: metadata.chunkSource || 'local://document',
+          originalName: metadata.metadata?.originalName || '',
+          uploadDate: metadata.metadata?.uploadDate || new Date().toISOString(),
+          fileType: metadata.metadata?.fileType || '',
+          encoding: metadata.metadata?.encoding || 'base64',
+          docAuthor: metadata.metadata?.docAuthor || 'manual upload',
+          description: metadata.metadata?.description || ''
+        };
         subdocs.items.push({
-          ...metadata,
+          ...normalizedMetadata,
           name: subfile,
           type: "file",
           fileType: metadata.type,
