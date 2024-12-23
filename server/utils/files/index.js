@@ -69,10 +69,10 @@ async function viewLocalFiles() {
           metadata: metadata.metadata
         });
         subdocs.items.push({
+          ...metadata,
           name: subfile,
           type: "file",
           fileType: metadata.type,
-          ...metadata,
           cached: await cachedVectorInformation(cachefilename, true),
           canWatch: liveSyncAvailable
             ? DocumentSyncQueue.canWatch(metadata)
