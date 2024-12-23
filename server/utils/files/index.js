@@ -85,10 +85,7 @@ async function viewLocalFiles() {
         });
 
         filenames[cachefilename] = subfile;
-        console.log('Directory state:', {
-          itemCount: directory.items.length,
-          folders: directory.items.map(f => f.name)
-        });
+       
       }
 
       // Grab the pinned workspaces and watched documents for this folder's documents
@@ -104,6 +101,10 @@ async function viewLocalFiles() {
       }
 
       directory.items.push(subdocs);
+      console.log('Directory state:', {
+        itemCount: directory.items.length,
+        folders: directory.items.map(f => f.name)
+      });
     }
   }
 
@@ -112,7 +113,11 @@ async function viewLocalFiles() {
     directory.items.find((folder) => folder.name === "custom-documents"),
     ...directory.items.filter((folder) => folder.name !== "custom-documents"),
   ].filter((i) => !!i);
-
+  console.log('Final directory state:', {
+    itemCount: directory.items.length,
+    folders: directory.items.map(f => f.name),
+    customDocsPresent: !!directory.items.find((folder) => folder.name === "custom-documents")
+  });
   return directory;
 }
 
