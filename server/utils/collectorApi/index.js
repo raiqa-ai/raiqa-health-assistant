@@ -137,7 +137,7 @@ class CollectorApi {
             docAuthor: "manual upload",
             description: `Manually uploaded ${path.extname(filename).substring(1)} file`,
             docSource: "file uploaded by the user",
-            chunkSource: "",
+            chunkSource: `local://document/${customDocsPath}/${filename}`,
             published: new Date().toISOString(),
             type: "uploaded_document",
             source: "local_upload",
@@ -149,7 +149,7 @@ class CollectorApi {
               encoding: 'base64',
               source: "local_upload",
               type: "uploaded_document",
-              chunkSource: ""
+              chunkSource: `local://document/${customDocsPath}/${filename}`
             },
             wordCount: 0,
             token_count_estimate: 0
