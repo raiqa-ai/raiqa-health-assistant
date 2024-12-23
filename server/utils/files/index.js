@@ -55,9 +55,19 @@ async function viewLocalFiles() {
       for (const subfile of subfiles) {
         if (path.extname(subfile) !== ".json") continue;
         const filePath = path.join(folderPath, subfile);
+        console.log('Processing JSON file:', { filePath });
         const rawData = fs.readFileSync(filePath, "utf8");
+        console.log('Raw JSON data exists:', { exists: !!rawData, length: rawData.length });
         const cachefilename = `${file}/${subfile}`;
         const { pageContent, ...metadata } = JSON.parse(rawData);
+        console.log('Parsed metadata:', {
+          id: metadata.id,
+          title: metadata.title,
+          type: metadata.type,
+          source: metadata.source,
+          chunkSource: metadata.chunkSource,
+          metadata: metadata.metadata
+        });
         subdocs.items.push({
           name: subfile,
           type: "file",
@@ -69,7 +79,16 @@ async function viewLocalFiles() {
           // pinnedWorkspaces: [], // This is the list of workspaceIds that have pinned this document
           // watched: false, // boolean to indicate if this document is watched in ANY workspace
         });
+        console.log('Added item to subdocs:', {
+          itemCount: subdocs.items.length,
+          lastItem: subdocs.items[subdocs.items.length - 1]
+        });
+
         filenames[cachefilename] = subfile;
+        console.log('Directory state:', {
+          itemCount: directory.items.length,
+          folders: directory.items.map(f => f.name)
+        });
       }
 
       // Grab the pinned workspaces and watched documents for this folder's documents
