@@ -338,21 +338,20 @@ const LanceDb = {
       const vectorValues = await EmbedderEngine.embedChunks(textChunks);
 
       if (!!vectorValues && vectorValues.length > 0) {
+        const normalizedMeta = normalizeMetadata(metadata);
         for (const [i, vector] of vectorValues.entries()) {
           const vectorRecord = {
             id: uuidv4(),
             values: vector,
-            // [DO NOT REMOVE]
-            // LangChain will be unable to find your text if you embed manually and dont include the `text` key.
-            // https://github.com/hwchase17/langchainjs/blob/2def486af734c0ca87285a48f1a04c057ab74bdf/langchain/src/vectorstores/pinecone.ts#L64
-            metadata: { ...metadata, text: textChunks[i] },
+            metadata: { ...normalizedMeta, text: textChunks[i] },
           };
 
           vectors.push(vectorRecord);
           submissions.push({
-            ...vectorRecord.metadata,
+            ...normalizedMeta,
             id: vectorRecord.id,
             vector: vectorRecord.values,
+            text: textChunks[i]
           });
           documentVectors.push({ docId, vectorId: vectorRecord.id });
         }
@@ -558,6 +557,21 @@ const LanceDb = {
       }
     }
     throw error;
+  },
+  normalizeMetadata: function (metadata) {
+    return {
+      id: metadata.id || '',
+      title: metadata.title || '',
+      type: 'file',
+      source: metadata.source || 'local://document',
+      chunkSource: metadata.chunkSource || 'local://document',
+      originalName: metadata.metadata?.originalName || '',
+      uploadDate: metadata.metadata?.uploadDate || new Date().toISOString(),
+      fileType: metadata.metadata?.fileType || '',
+      encoding: metadata.metadata?.encoding || 'base64',
+      docAuthor: metadata.metadata?.docAuthor || 'manual upload',
+      description: metadata.metadata?.description || ''
+    };
   },
 };
 
