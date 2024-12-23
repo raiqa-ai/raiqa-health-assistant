@@ -26,6 +26,7 @@ async function fileData(filePath = null) {
 
 async function viewLocalFiles() {
   if (!fs.existsSync(documentsPath)) fs.mkdirSync(documentsPath);
+  console.log('Documents path exists:', { documentsPath });
   const liveSyncAvailable = await DocumentSyncQueue.enabled();
   const directory = {
     name: "documents",
@@ -33,7 +34,10 @@ async function viewLocalFiles() {
     items: [],
   };
 
-  for (const file of fs.readdirSync(documentsPath)) {
+  const allFiles = fs.readdirSync(documentsPath);
+  console.log('All files in documents path:', { files: allFiles });
+
+  for (const file of allFiles) {
     if (path.extname(file) === ".md") continue;
     const folderPath = path.resolve(documentsPath, file);
     const isFolder = fs.lstatSync(folderPath).isDirectory();
@@ -44,6 +48,8 @@ async function viewLocalFiles() {
         items: [],
       };
       const subfiles = fs.readdirSync(folderPath);
+      console.log('Files in subfolder:', { folder: file, files: subfiles });
+
       const filenames = {};
 
       for (const subfile of subfiles) {
