@@ -79,8 +79,11 @@ export default function Citations({ sources = [] }) {
 const Citation = memo(({ source, onClick }) => {
   const { title } = source;
   if (!title) return null;
-  const chunkSourceInfo = parseChunkSource(source);
-  const truncatedTitle = chunkSourceInfo?.text ?? middleTruncate(title, 25);
+  
+  // Decode the title if it's encoded
+  const decodedTitle = decodeURIComponent(title);
+  const chunkSourceInfo = parseChunkSource({ ...source, title: decodedTitle });
+  const truncatedTitle = chunkSourceInfo?.text ?? middleTruncate(decodedTitle, 25);
   const CitationIcon = ICONS.hasOwnProperty(chunkSourceInfo?.icon)
     ? ICONS[chunkSourceInfo.icon]
     : ICONS.file;
@@ -97,8 +100,10 @@ const Citation = memo(({ source, onClick }) => {
 });
 
 function omitChunkHeader(text) {
-  if (!text.startsWith("<document_metadata>")) return text;
-  return text.split("</document_metadata>")[1].trim();
+  if (!text) return '';
+  if (!text.startsWith("<document_metadata>")) return decodeURIComponent(text);
+  const [_, content] = text.split("</document_metadata>");
+  return decodeURIComponent(content?.trim() || '');
 }
 
 function CitationDetailModal({ source, onClose }) {

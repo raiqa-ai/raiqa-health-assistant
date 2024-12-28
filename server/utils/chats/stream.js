@@ -11,6 +11,7 @@ const {
   recentChatHistory,
   sourceIdentifier,
 } = require("./index");
+const { denormalizeText } = require('../utils/text');
 
 const VALID_CHAT_MODE = ["chat", "query"];
 
@@ -275,7 +276,19 @@ async function streamChatWithWorkspace(
   return;
 }
 
+const processSearchResults = (results) => {
+  return {
+    ...results,
+    sources: results.sources.map(source => ({
+      ...source,
+      text: denormalizeText(source.text),
+      title: denormalizeText(source.title)
+    }))
+  };
+};
+
 module.exports = {
   VALID_CHAT_MODE,
   streamChatWithWorkspace,
+  processSearchResults,
 };

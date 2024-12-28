@@ -94,65 +94,35 @@ const Document = {
       const docId = uuidv4();
       const { pageContent, ...metadata } = data;
       
-      // Normalize the metadata before stringifying
+      // Normalize the metadata and content
       const normalizedMetadata = {
-        id: docId,
-        title: metadata?.title || path.split("/").pop(),
-        type: metadata?.type || 'file',
-        source: metadata?.source || 'local://document',
-        chunkSource: metadata?.chunkSource || 'local://document', 
-        originalName: metadata?.originalName || path.split("/").pop(),
-        uploadDate: metadata?.uploadDate || new Date().toISOString(),
-        fileType: metadata?.fileType || path.split(".").pop(),
-        encoding: metadata?.encoding || 'utf8',
-        docAuthor: metadata?.docAuthor || 'manual upload',
-        description: metadata?.description || ''
-      };
-
-      const newDoc = {
+        ...metadata,
+        text: pageContent.trim(),
         docId,
-        filename: path.split("/")[1],
-        docpath: path,
         workspaceId: workspace.id,
-        metadata: JSON.stringify(normalizedMetadata),
+        // Ensure proper encoding of special characters
+        title: metadata.title ? encodeURIComponent(metadata.title) : null,
+        chunkSource: metadata.chunkSource || 'file://'
       };
-
-      const { vectorized, error } = await VectorDb.addDocumentToNamespace(
-        workspace.slug,
-        { pageContent, ...normalizedMetadata, docId },
-        path
-      );
-
-      if (!vectorized) {
-        console.error("Failed to vectorize", metadata?.title || newDoc.filename);
-        failedToEmbed.push(metadata?.title || newDoc.filename);
-        errors.add(error);
-        continue;
-      }
 
       try {
-        await prisma.workspace_documents.create({ data: newDoc });
-        embedded.push(path);
+        // Store document with normalized metadata
+        const document = await prisma.workspace_documents.create({
+          data: {
+            id: docId,
+            workspaceId: workspace.id,
+            metadata: JSON.stringify(normalizedMetadata),
+            pinned: false,
+            watched: false,
+          },
+        });
+        embedded.push(document);
       } catch (error) {
-        console.error(error.message);
+        errors.add(error.message);
+        failedToEmbed.push(path);
       }
     }
-
-    await Telemetry.sendTelemetry("documents_embedded_in_workspace", {
-      LLMSelection: process.env.LLM_PROVIDER || "openai",
-      Embedder: process.env.EMBEDDING_ENGINE || "inherit",
-      VectorDbSelection: process.env.VECTOR_DB || "lancedb",
-      TTSSelection: process.env.TTS_PROVIDER || "native",
-    });
-    await EventLogs.logEvent(
-      "workspace_documents_added",
-      {
-        workspaceName: workspace?.name || "Unknown Workspace",
-        numberOfDocumentsAdded: additions.length,
-      },
-      userId
-    );
-    return { failedToEmbed, errors: Array.from(errors), embedded };
+    return { embedded, failed: failedToEmbed };
   },
 
   removeDocuments: async function (workspace, removals = [], userId = null) {
