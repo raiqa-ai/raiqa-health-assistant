@@ -93,25 +93,38 @@ const Document = {
 
       const docId = uuidv4();
       const { pageContent, ...metadata } = data;
+      
+      // Normalize the metadata before stringifying
+      const normalizedMetadata = {
+        id: docId,
+        title: metadata?.title || path.split("/").pop(),
+        type: metadata?.type || 'file',
+        source: metadata?.source || 'local://document',
+        chunkSource: metadata?.chunkSource || 'local://document', 
+        originalName: metadata?.originalName || path.split("/").pop(),
+        uploadDate: metadata?.uploadDate || new Date().toISOString(),
+        fileType: metadata?.fileType || path.split(".").pop(),
+        encoding: metadata?.encoding || 'utf8',
+        docAuthor: metadata?.docAuthor || 'manual upload',
+        description: metadata?.description || ''
+      };
+
       const newDoc = {
         docId,
         filename: path.split("/")[1],
         docpath: path,
         workspaceId: workspace.id,
-        metadata: JSON.stringify(metadata),
+        metadata: JSON.stringify(normalizedMetadata),
       };
 
       const { vectorized, error } = await VectorDb.addDocumentToNamespace(
         workspace.slug,
-        { ...data, docId },
+        { pageContent, ...normalizedMetadata, docId },
         path
       );
 
       if (!vectorized) {
-        console.error(
-          "Failed to vectorize",
-          metadata?.title || newDoc.filename
-        );
+        console.error("Failed to vectorize", metadata?.title || newDoc.filename);
         failedToEmbed.push(metadata?.title || newDoc.filename);
         errors.add(error);
         continue;
