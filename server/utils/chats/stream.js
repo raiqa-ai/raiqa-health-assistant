@@ -11,7 +11,7 @@ const {
   recentChatHistory,
   sourceIdentifier,
 } = require("./index");
-const { denormalizeText } = require('../utils/text');
+const { denormalizeText } = require('../text/text');
 
 const VALID_CHAT_MODE = ["chat", "query"];
 
