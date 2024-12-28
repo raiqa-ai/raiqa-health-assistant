@@ -13,6 +13,25 @@ const fs = require('fs');
  * @typedef {import('@lancedb/lancedb').Connection} LanceClient
  */
 
+const normalizeMetadata = (metadata = {}) => {
+  // Extract nested metadata if it exists
+  const meta = metadata.metadata || metadata;
+  
+  return {
+    id: meta.id || metadata.id || '',
+    title: meta.title || metadata.title || '',
+    type: meta.type || metadata.type || 'file',
+    source: meta.source || metadata.source || 'local://document',
+    chunkSource: meta.chunkSource || metadata.chunkSource || 'local://document',
+    originalName: meta.originalName || metadata.originalName || '',
+    uploadDate: meta.uploadDate || metadata.uploadDate || new Date().toISOString(),
+    fileType: meta.fileType || metadata.fileType || '',
+    encoding: meta.encoding || metadata.encoding || 'base64',
+    docAuthor: meta.docAuthor || metadata.docAuthor || 'manual upload',
+    description: meta.description || metadata.description || ''
+  };
+};
+
 const lanceDbPath = process.env.NODE_ENV === "development"
   ? path.resolve(__dirname, "../../../storage/lancedb")
   : path.resolve(process.env.STORAGE_DIR, "lancedb");
