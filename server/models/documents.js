@@ -114,6 +114,7 @@ const Document = {
             id: docId,
             workspaceId: workspace.id,
             filename: path.split('/').pop(),
+            docpath: path,
             metadata: JSON.stringify(normalizedMetadata),
             pinned: false,
             watched: false,
