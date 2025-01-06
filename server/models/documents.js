@@ -109,6 +109,7 @@ const Document = {
         // Store document with normalized metadata
         const document = await prisma.workspace_documents.create({
           data: {
+            docId: docId,
             id: docId,
             workspaceId: workspace.id,
             metadata: JSON.stringify(normalizedMetadata),
