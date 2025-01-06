@@ -4,6 +4,7 @@ const prisma = require("../utils/prisma");
 const { Telemetry } = require("./telemetry");
 const { EventLogs } = require("./eventLogs");
 const { safeJsonParse } = require("../utils/http");
+const path = require('path');
 
 const Document = {
   writable: ["pinned", "watched", "lastUpdatedAt"],
@@ -112,6 +113,7 @@ const Document = {
             docId: docId,
             id: docId,
             workspaceId: workspace.id,
+            filename: path.split('/').pop(),
             metadata: JSON.stringify(normalizedMetadata),
             pinned: false,
             watched: false,
