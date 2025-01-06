@@ -111,7 +111,6 @@ const Document = {
         const document = await prisma.workspace_documents.create({
           data: {
             docId: docId,
-            id: docId,
             workspaceId: workspace.id,
             filename: path.split('/').pop(),
             docpath: path,
