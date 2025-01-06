@@ -119,6 +119,14 @@ const Document = {
             watched: false,
           },
         });
+
+        // Add document to vector database
+        await VectorDb.addDocumentToNamespace(
+          workspace.slug,
+          { ...data, docId },
+          path
+        );
+
         embedded.push(document);
       } catch (error) {
         errors.add(error.message);
