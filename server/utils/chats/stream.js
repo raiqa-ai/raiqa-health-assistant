@@ -176,13 +176,7 @@ async function streamChatWithWorkspace(
   // and does not appear to the user that a new response used information that is otherwise irrelevant for a given prompt.
   // TLDR; reduces GitHub issues for "LLM citing document that has no answer in it" while keep answers highly accurate.
   contextTexts = [...contextTexts, ...filledSources.contextTexts];
-  sources = [...sources, ...vectorSearchResults.sources.map(source => ({
-    text: source.metadata.text || source.pageContent,
-    title: source.metadata.title || 'Untitled Document',
-    page: source.metadata.page || 1,
-    source: source.metadata.source || 'local://document',
-    ...source.metadata
-  }))];
+  sources = [...sources, ...vectorSearchResults.sources];
 
   // If in query mode and no context chunks are found from search, backfill, or pins -  do not
   // let the LLM try to hallucinate a response or use general knowledge and exit early

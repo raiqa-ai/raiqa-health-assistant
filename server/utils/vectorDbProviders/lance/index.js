@@ -364,16 +364,19 @@ const LanceDb = {
             values: vector,
             metadata: { 
               ...normalizedMeta,
+              docId: documentData.docId || metadata.docId,
               text: textChunks[i],
-              citation: {
-                title: normalizedMeta.title || 'Untitled Document',
-                page: i + 1,
-                text: textChunks[i].slice(0, 200) + '...'
-              }
+              title: normalizedMeta.title || 'Untitled Document',
+              page: i + 1,
+              source: normalizedMeta.source || 'local://document'
             },
           };
 
           vectors.push(vectorRecord);
+          documentVectors.push({ 
+            docId: documentData.docId || metadata.docId, 
+            vectorId: vectorRecord.id 
+          });
           submissions.push({
             ...normalizedMeta,
             id: vectorRecord.id,
@@ -381,7 +384,6 @@ const LanceDb = {
             text: textChunks[i],
             citation: vectorRecord.metadata.citation
           });
-          documentVectors.push({ docId, vectorId: vectorRecord.id });
         }
       } else {
         throw new Error(
