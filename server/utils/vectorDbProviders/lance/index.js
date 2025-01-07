@@ -318,9 +318,14 @@ const LanceDb = {
           for (const chunk of chunks) {
             chunk.forEach((chunk) => {
               const id = uuidv4();
-              const { id: _id, ...metadata } = chunk.metadata;
+              const { id: _id, ...chunkMetadata } = chunk.metadata;
               documentVectors.push({ docId, vectorId: id });
-              submissions.push({ id: id, vector: chunk.values, ...metadata });
+              submissions.push({ 
+                id: id, 
+                vector: chunk.values,
+                docId,
+                ...chunkMetadata 
+              });
             });
           }
 
@@ -382,7 +387,7 @@ const LanceDb = {
             id: vectorRecord.id,
             vector: vectorRecord.values,
             text: textChunks[i],
-            citation: vectorRecord.metadata.citation
+            docId: documentData.docId || metadata.docId,
           });
         }
       } else {
