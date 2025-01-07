@@ -103,7 +103,9 @@ const Document = {
         workspaceId: workspace.id,
         // Ensure proper encoding of special characters
         title: metadata.title ? encodeURIComponent(metadata.title) : null,
-        chunkSource: metadata.chunkSource || 'file://'
+        chunkSource: metadata.chunkSource || 'file://',
+        filename: path.split('/').pop(),
+        path: path
       };
 
       try {
@@ -120,10 +122,13 @@ const Document = {
           },
         });
 
-        // Add document to vector database
+        // Add document to vector database with normalized metadata
         await VectorDb.addDocumentToNamespace(
           workspace.slug,
-          { ...data, docId },
+          {
+            pageContent,
+            metadata: normalizedMetadata
+          },
           path
         );
 

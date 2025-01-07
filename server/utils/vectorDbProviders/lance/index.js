@@ -362,7 +362,15 @@ const LanceDb = {
           const vectorRecord = {
             id: uuidv4(),
             values: vector,
-            metadata: { ...normalizedMeta, text: textChunks[i] },
+            metadata: { 
+              ...normalizedMeta,
+              text: textChunks[i],
+              citation: {
+                title: normalizedMeta.title || 'Untitled Document',
+                page: i + 1,
+                text: textChunks[i].slice(0, 200) + '...'
+              }
+            },
           };
 
           vectors.push(vectorRecord);
@@ -370,7 +378,8 @@ const LanceDb = {
             ...normalizedMeta,
             id: vectorRecord.id,
             vector: vectorRecord.values,
-            text: textChunks[i]
+            text: textChunks[i],
+            citation: vectorRecord.metadata.citation
           });
           documentVectors.push({ docId, vectorId: vectorRecord.id });
         }
