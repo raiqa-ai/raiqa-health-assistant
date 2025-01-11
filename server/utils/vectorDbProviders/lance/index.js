@@ -303,39 +303,75 @@ const LanceDb = {
   ) {
     const { DocumentVectors } = require("../../../models/vectors");
     try {
+      console.log("[LanceDB] Received document data:", {
+        hasPageContent: !!documentData.pageContent,
+        docId: documentData.docId,
+        metadataKeys: Object.keys(documentData),
+      });
+
       const { pageContent, docId, ...metadata } = documentData;
-      if (!pageContent || pageContent.length == 0) return false;
+      
+      // Enhanced validation
+      if (!pageContent || pageContent.length == 0) {
+        console.error("[LanceDB] Missing or empty pageContent");
+        return false;
+      }
+      if (!docId) {
+        console.error("[LanceDB] Missing docId in document data");
+        throw new Error('Document ID is required for vector storage');
+      }
 
-      console.log("Adding new vectorized document into namespace", namespace);
-      if (!skipCache) {
-        const cacheResult = await cachedVectorInformation(fullFilePath);
-        if (cacheResult.exists) {
-          const { client } = await this.connect();
-          const { chunks } = cacheResult;
-          const documentVectors = [];
-          const submissions = [];
+      // Validate docId format (assuming it should be a UUID)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(docId)) {
+        console.error("[LanceDB] Invalid docId format:", docId);
+        throw new Error('Invalid document ID format');
+      }
 
-          for (const chunk of chunks) {
-            chunk.forEach((chunk) => {
-              const id = uuidv4();
-              const { id: _id, ...chunkMetadata } = chunk.metadata || {};
-              documentVectors.push({ docId, vectorId: id });
-              submissions.push({ 
-                id, 
-                vector: chunk.values,
-                docId: docId || '',
-                text: chunkMetadata.text || '',
-                title: chunkMetadata.title || 'Untitled Document',
-                source: chunkMetadata.source || 'local://document',
-                ...chunkMetadata
-              });
+      console.log("[LanceDB] Adding document to namespace:", {
+        namespace,
+        docId,
+        hasCachedData: !!fullFilePath && !skipCache
+      });
+
+      const cacheResult = await cachedVectorInformation(fullFilePath);
+      if (cacheResult.exists) {
+        console.log("[LanceDB] Using cached vector data:", {
+          chunksCount: cacheResult.chunks.length,
+          firstChunkMetadata: cacheResult.chunks[0]?.[0]?.metadata
+        });
+        
+        const { client } = await this.connect();
+        const { chunks } = cacheResult;
+        const documentVectors = [];
+        const submissions = [];
+
+        for (const chunk of chunks) {
+          chunk.forEach((chunk) => {
+            const id = uuidv4();
+            const { id: _id, ...chunkMetadata } = chunk.metadata || {};
+            documentVectors.push({ docId, vectorId: id });
+            submissions.push({ 
+              id, 
+              vector: chunk.values,
+              docId,
+              text: chunkMetadata.text || '',
+              title: chunkMetadata.title || 'Untitled Document',
+              source: chunkMetadata.source || 'local://document',
+              ...chunkMetadata
             });
-          }
-
-          await this.updateOrCreateCollection(client, submissions, namespace);
-          await DocumentVectors.bulkInsert(documentVectors);
-          return { vectorized: true, error: null };
+          });
         }
+
+        console.log("[LanceDB] Prepared submissions:", {
+          submissionCount: submissions.length,
+          documentVectorCount: documentVectors.length,
+          sampleDocId: documentVectors[0]?.docId
+        });
+
+        await this.updateOrCreateCollection(client, submissions, namespace);
+        await DocumentVectors.bulkInsert(documentVectors);
+        return { vectorized: true, error: null };
       }
 
       // If we are here then we are going to embed and store a novel document.
@@ -365,7 +401,18 @@ const LanceDb = {
       const vectorValues = await EmbedderEngine.embedChunks(textChunks);
 
       if (!!vectorValues && vectorValues.length > 0) {
+        console.log("[LanceDB] Creating new vectors:", {
+          vectorCount: vectorValues.length,
+          chunkCount: textChunks.length
+        });
+
         const normalizedMeta = normalizeMetadata(metadata);
+        
+        // Validate before processing
+        if (documentVectors.length > 0) {
+          console.warn("[LanceDB] Document vectors already exist before processing new vectors");
+        }
+
         for (const [i, vector] of vectorValues.entries()) {
           const vectorRecord = {
             id: uuidv4(),
@@ -382,19 +429,25 @@ const LanceDb = {
 
           vectors.push(vectorRecord);
           documentVectors.push({ 
-            docId: documentData.docId || metadata.docId, 
+            docId,
             vectorId: vectorRecord.id 
           });
           submissions.push({
             id: vectorRecord.id,
             vector: vectorRecord.values,
-            docId: documentData.docId || metadata.docId || '',
+            docId,
             text: textChunks[i] || '',
             title: normalizedMeta.title || 'Untitled Document',
             source: normalizedMeta.source || 'local://document',
             ...normalizedMeta
           });
         }
+
+        console.log("[LanceDB] Vector creation complete:", {
+          vectorsCreated: vectors.length,
+          documentVectorsCreated: documentVectors.length,
+          submissionsCreated: submissions.length
+        });
       } else {
         throw new Error(
           "Could not embed document chunks! This document will not be recorded."
@@ -410,6 +463,19 @@ const LanceDb = {
         await this.updateOrCreateCollection(client, submissions, namespace);
         await storeVectorResult(chunks, fullFilePath);
       }
+
+      if (documentVectors.some(dv => !dv.docId)) {
+        console.error("[LanceDB] Found document vectors with missing docId:", 
+          documentVectors.filter(dv => !dv.docId)
+        );
+        throw new Error('Some document vectors are missing docId');
+      }
+
+      console.log("[LanceDB] Successfully inserted document vectors:", {
+        count: documentVectors.length,
+        namespace,
+        docId
+      });
 
       await DocumentVectors.bulkInsert(documentVectors);
       return { vectorized: true, error: null };
