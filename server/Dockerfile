@@ -2,7 +2,7 @@ FROM ubuntu:jammy-20240627.1
 
 # Install required packages
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y curl cifs-utils iproute2 iputils-ping net-tools && \
+    apt-get install -y curl && \
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g yarn && \
@@ -12,10 +12,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
 RUN groupadd -r raiqaAssistant && \
     useradd -r -g raiqaAssistant -d /app raiqaAssistant
 
+# Create directory structure
+RUN mkdir -p /app/shared/pdf /app/server && \
+    chown -R raiqaAssistant:raiqaAssistant /app
+
 WORKDIR /app
 
-# Copy all files first
+# Copy all files
 COPY . .
+
+WORKDIR /app/server
 
 # Install dependencies
 RUN yarn install --frozen-lockfile

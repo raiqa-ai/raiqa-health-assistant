@@ -14,8 +14,18 @@ RUN groupadd -r raiqaAssistant && \
 
 WORKDIR /app
 
-# Copy application files first
-COPY . .
+# Create necessary directories
+RUN mkdir -p collector shared/pdf && \
+    chown -R raiqaAssistant:raiqaAssistant /app
+
+# Copy shared files first
+COPY shared/pdf /app/shared/pdf/
+
+# Copy collector files
+COPY collector /app/collector/
+
+# Set working directory for collector
+WORKDIR /app/collector
 
 # Install dependencies
 RUN yarn install --frozen-lockfile
