@@ -1,71 +1,10 @@
 const path = require('path');
 const fs = require('fs').promises;
 const { v4 } = require("uuid");
-const { createdDate } = require("../../collector/utils/files");
-const { tokenizeString } = require("../../collector/utils/tokenizer");
+const { PDFLoader } = require("../../../collector/processSingleFile/convert/asPDF/PDFLoader");
+const { createdDate } = require("../../../collector/utils/files");
+const { tokenizeString } = require("../../../collector/utils/tokenizer");
 const { default: slugify } = require("slugify");
-
-class PDFLoader {
-  constructor(filePath, options = {}) {
-    this.filePath = filePath;
-    this.options = options;
-  }
-
-  async getPdfJS() {
-    return import('pdfjs-dist/legacy/build/pdf.js');
-  }
-
-  async load() {
-    const buffer = await fs.readFile(this.filePath);
-    const { getDocument, version } = await this.getPdfJS();
-
-    const pdf = await getDocument({
-      data: new Uint8Array(buffer),
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true,
-    }).promise;
-
-    const meta = await pdf.getMetadata().catch(() => null);
-    const documents = [];
-
-    for (let i = 1; i <= pdf.numPages; i += 1) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-
-      if (content.items.length === 0) continue;
-
-      let lastY;
-      const textItems = [];
-      for (const item of content.items) {
-        if ("str" in item) {
-          if (lastY === item.transform[5] || !lastY) {
-            textItems.push(item.str);
-          } else {
-            textItems.push(`\n${item.str}`);
-          }
-          lastY = item.transform[5];
-        }
-      }
-
-      const text = textItems.join("");
-      documents.push({
-        pageContent: text.trim(),
-        metadata: {
-          source: this.filePath,
-          pdf: {
-            version,
-            info: meta?.info,
-            metadata: meta?.metadata,
-            totalPages: pdf.numPages,
-          },
-          loc: { pageNumber: i },
-        },
-      });
-    }
-    return documents;
-  }
-}
 
 async function extractPdfText(filePath) {
   const pdfLoader = new PDFLoader(filePath, {
