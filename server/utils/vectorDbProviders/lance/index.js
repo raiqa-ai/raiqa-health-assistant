@@ -318,13 +318,16 @@ const LanceDb = {
           for (const chunk of chunks) {
             chunk.forEach((chunk) => {
               const id = uuidv4();
-              const { id: _id, ...chunkMetadata } = chunk.metadata;
+              const { id: _id, ...chunkMetadata } = chunk.metadata || {};
               documentVectors.push({ docId, vectorId: id });
               submissions.push({ 
-                id: id, 
+                id, 
                 vector: chunk.values,
-                docId,
-                ...chunkMetadata 
+                docId: docId || '',
+                text: chunkMetadata.text || '',
+                title: chunkMetadata.title || 'Untitled Document',
+                source: chunkMetadata.source || 'local://document',
+                ...chunkMetadata
               });
             });
           }
@@ -383,11 +386,13 @@ const LanceDb = {
             vectorId: vectorRecord.id 
           });
           submissions.push({
-            ...normalizedMeta,
             id: vectorRecord.id,
             vector: vectorRecord.values,
-            text: textChunks[i],
-            docId: documentData.docId || metadata.docId,
+            docId: documentData.docId || metadata.docId || '',
+            text: textChunks[i] || '',
+            title: normalizedMeta.title || 'Untitled Document',
+            source: normalizedMeta.source || 'local://document',
+            ...normalizedMeta
           });
         }
       } else {
