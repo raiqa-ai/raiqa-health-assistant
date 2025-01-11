@@ -306,10 +306,12 @@ const LanceDb = {
       console.log("[LanceDB] Received document data:", {
         hasPageContent: !!documentData.pageContent,
         docId: documentData.docId,
-        metadataKeys: Object.keys(documentData),
+        metadataDocId: documentData.metadata?.docId,
+        fullMetadata: JSON.stringify(documentData.metadata),
+        allKeys: Object.keys(documentData),
       });
 
-      const { pageContent, docId, ...metadata } = documentData;
+      const { pageContent, metadata = {}, docId = metadata?.docId } = documentData;
       
       // Enhanced validation
       if (!pageContent || pageContent.length == 0) {
