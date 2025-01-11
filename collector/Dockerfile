@@ -14,6 +14,12 @@ RUN groupadd -r raiqaAssistant && \
 
 WORKDIR /app
 
+# Copy application files first
+COPY . .
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
 # Create startup script that handles directory creation and permissions
 RUN echo '#!/bin/bash\n\
 set -e\n\
@@ -44,12 +50,6 @@ exec yarn start\n\
 ' > /startup.sh
 
 RUN chmod +x /startup.sh
-
-# Copy and install application
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
-
-COPY . .
 
 USER raiqaAssistant
 ENV NODE_ENV=production

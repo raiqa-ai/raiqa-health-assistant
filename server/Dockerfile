@@ -13,10 +13,12 @@ RUN groupadd -r raiqaAssistant && \
     useradd -r -g raiqaAssistant -d /app raiqaAssistant
 
 WORKDIR /app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
 
+# Copy all files first
 COPY . .
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
 
 # Generate Prisma client
 RUN npx prisma generate
