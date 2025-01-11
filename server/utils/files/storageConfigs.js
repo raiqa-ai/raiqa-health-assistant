@@ -17,7 +17,45 @@ const fileUploadStorage = multer.diskStorage({
   },
 });
 
-// Export storage configurations
+const fileAPIUploadStorage = multer.diskStorage({
+  destination: function (_, __, cb) {
+    const uploadOutput = process.env.NODE_ENV === "development"
+      ? path.resolve(__dirname, `../../../collector/hotdir`)
+      : path.resolve(process.env.STORAGE_DIR, `documents`);
+    fs.mkdirSync(uploadOutput, { recursive: true });
+    cb(null, uploadOutput);
+  },
+  filename: function (_, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const pfpUploadStorage = multer.diskStorage({
+  destination: function (_, __, cb) {
+    const uploadOutput = process.env.NODE_ENV === "development"
+      ? path.resolve(__dirname, `../../storage/assets`)
+      : path.resolve(process.env.STORAGE_DIR, `assets`);
+    fs.mkdirSync(uploadOutput, { recursive: true });
+    cb(null, uploadOutput);
+  },
+  filename: function (_, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const assetUploadStorage = multer.diskStorage({
+  destination: function (_, __, cb) {
+    const uploadOutput = process.env.NODE_ENV === "development"
+      ? path.resolve(__dirname, `../../storage/assets`)
+      : path.resolve(process.env.STORAGE_DIR, `assets`);
+    fs.mkdirSync(uploadOutput, { recursive: true });
+    cb(null, uploadOutput);
+  },
+  filename: function (_, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
 module.exports = {
   fileUploadStorage,
   fileAPIUploadStorage,

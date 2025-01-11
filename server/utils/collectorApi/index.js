@@ -2,6 +2,7 @@ const { EncryptionManager } = require("../EncryptionManager");
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const { processPdfDocument } = require('../files/pdfProcessor');
 
 // When running locally will occupy the 0.0.0.0 hostname space but when deployed inside
 // of docker this endpoint is not exposed so it is only on the Docker instances internal network

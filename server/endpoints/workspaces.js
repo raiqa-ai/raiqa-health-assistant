@@ -36,6 +36,7 @@ const { getTTSProvider } = require("../utils/TextToSpeech");
 const { WorkspaceThread } = require("../models/workspaceThread");
 const truncate = require("truncate");
 const { purgeDocument } = require("../utils/files/purgeDocument");
+const { processPdfDocument } = require('../utils/files/pdfProcessor');
 
 function workspaceEndpoints(app) {
   if (!app) return;
@@ -154,6 +155,19 @@ function workspaceEndpoints(app) {
           path: filePath,
           exists: fs.existsSync(filePath)
         });
+
+        if (request.file.mimetype === 'application/pdf') {
+          try {
+            const data = await processPdfDocument(filePath, originalname);
+            // Rest of the processing logic
+          } catch (error) {
+            response.status(500).json({
+              success: false,
+              error: `Failed to process PDF: ${error.message}`
+            }).end();
+            return;
+          }
+        }
 
         const { success, reason, documents } = await Collector.processDocument(originalname);
         console.log('Collector processing result:', { success, reason, documents });
