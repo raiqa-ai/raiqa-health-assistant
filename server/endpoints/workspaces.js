@@ -12,7 +12,9 @@ const { Document } = require("../models/documents");
 const { DocumentVectors } = require("../models/vectors");
 const { WorkspaceChats } = require("../models/workspaceChats");
 const { getVectorDbClass } = require("../utils/helpers");
-const { handleFileUpload, handlePfpUpload } = require("../utils/files/multer");
+const { handleFileUpload, handleAPIFileUpload } = require('../utils/files/multer');
+const { handlePdfUpload } = require('../utils/files/pdfHandler');
+const { handleAssetUpload, handlePfpUpload } = require('../utils/files/assetHandler');
 const { validatedRequest } = require("../utils/middleware/validatedRequest");
 const { Telemetry } = require("../models/telemetry");
 const {

@@ -12,7 +12,9 @@ const {
   multiUserMode,
   queryParams,
 } = require("../utils/http");
-const { handleAssetUpload, handlePfpUpload } = require("../utils/files/multer");
+const { handleFileUpload, handleAPIFileUpload } = require('../utils/files/multer');
+const { handlePdfUpload } = require('../utils/files/pdfHandler');
+const { handleAssetUpload, handlePfpUpload } = require('../utils/files/assetHandler');
 const { v4 } = require("uuid");
 const { SystemSettings } = require("../models/systemSettings");
 const { User } = require("../models/user");
