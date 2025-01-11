@@ -1,8 +1,8 @@
 const path = require('path');
 const fs = require('fs').promises;
 const { v4 } = require("uuid");
-const { createdDate } = require("../../../collector/utils/files");
-const { tokenizeString } = require("../../../collector/utils/tokenizer");
+const { createdDate } = require("../../collector/utils/files");
+const { tokenizeString } = require("../../collector/utils/tokenizer");
 const { default: slugify } = require("slugify");
 
 class PDFLoader {

@@ -65,6 +65,7 @@
     "node-llama-cpp": "^2.8.0",
     "ollama": "^0.5.0",
     "openai": "4.38.5",
+    "pdfjs-dist": "^4.10.38",
     "pg": "^8.11.5",
     "pinecone-client": "^1.1.0",
     "pluralize": "^8.0.0",
