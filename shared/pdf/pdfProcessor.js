@@ -1,9 +1,9 @@
 const path = require('path');
 const fs = require('fs').promises;
 const { v4 } = require("uuid");
-const { PDFLoader } = require("../../../collector/processSingleFile/convert/asPDF/PDFLoader");
-const { createdDate } = require("../../../collector/utils/files");
-const { tokenizeString } = require("../../../collector/utils/tokenizer");
+const { PDFLoader } = require("./PDFLoader");
+const { createdDate } = require("../../collector/utils/files");
+const { tokenizeString } = require("../../collector/utils/tokenizer");
 const { default: slugify } = require("slugify");
 
 async function extractPdfText(filePath) {

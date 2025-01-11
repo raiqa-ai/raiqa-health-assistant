@@ -1,5 +1,5 @@
 const { trashFile, writeToServerDocuments } = require("../../../utils/files");
-const { processPdfDocument } = require("../../../../server/utils/files/pdfProcessor");
+const { processPdfDocument } = require("../../../../shared/pdf/pdfProcessor");
 const { default: slugify } = require("slugify");
 
 async function asPdf({ fullFilePath = "", filename = "" }) {
