@@ -130,8 +130,10 @@ class CollectorApi {
         
         if (fs.existsSync(sourcePath)) {
           // Create JSON metadata file with base64 encoded content for binary files
+          const documentId = uuidv4();
           const jsonContent = {
-            id: uuidv4(),
+            id: documentId,
+            docId: documentId,
             url: `file://${sourcePath}`,
             title: path.parse(filename).name,
             docAuthor: "manual upload",
@@ -143,7 +145,8 @@ class CollectorApi {
             source: "local://document",
             pageContent: fs.readFileSync(sourcePath).toString('base64'),
             metadata: {
-              id: uuidv4(),
+              id: documentId,
+              docId: documentId,
               originalName: filename,
               uploadDate: new Date().toISOString(),
               fileType: path.extname(filename).substring(1),
