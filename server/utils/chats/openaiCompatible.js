@@ -68,14 +68,21 @@ async function chatSync({
     .pinnedDocs()
     .then((pinnedDocs) => {
       pinnedDocs.forEach((doc) => {
-        const { pageContent, ...metadata } = doc;
-        pinnedDocIdentifiers.push(sourceIdentifier(doc));
-        contextTexts.push(doc.pageContent);
+        // Preserve the full document structure
+        const docData = {
+          pageContent: doc.pageContent,
+          docId: doc.metadata?.docId || doc.docId,
+          metadata: {
+            ...doc.metadata,
+            text: doc.pageContent.slice(0, 1000) + "...continued in source document..."
+          }
+        };
+        
+        pinnedDocIdentifiers.push(sourceIdentifier(docData));
+        contextTexts.push(docData.pageContent);
         sources.push({
-          text:
-            pageContent.slice(0, 1_000) +
-            "...continued on in source document...",
-          ...metadata,
+          text: docData.metadata.text,
+          ...docData.metadata
         });
       });
     });
@@ -280,14 +287,21 @@ async function streamChat({
     .pinnedDocs()
     .then((pinnedDocs) => {
       pinnedDocs.forEach((doc) => {
-        const { pageContent, ...metadata } = doc;
-        pinnedDocIdentifiers.push(sourceIdentifier(doc));
-        contextTexts.push(doc.pageContent);
+        // Preserve the full document structure
+        const docData = {
+          pageContent: doc.pageContent,
+          docId: doc.metadata?.docId || doc.docId,
+          metadata: {
+            ...doc.metadata,
+            text: doc.pageContent.slice(0, 1000) + "...continued in source document..."
+          }
+        };
+        
+        pinnedDocIdentifiers.push(sourceIdentifier(docData));
+        contextTexts.push(docData.pageContent);
         sources.push({
-          text:
-            pageContent.slice(0, 1_000) +
-            "...continued on in source document...",
-          ...metadata,
+          text: docData.metadata.text,
+          ...docData.metadata
         });
       });
     });

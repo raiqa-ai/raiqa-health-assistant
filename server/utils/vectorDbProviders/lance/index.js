@@ -303,18 +303,17 @@ const LanceDb = {
   ) {
     const { DocumentVectors } = require("../../../models/vectors");
     try {
-      console.log("[LanceDB] Received document data:", {
-        hasPageContent: !!documentData.pageContent,
-        docId: documentData.docId,
-        metadataDocId: documentData.metadata?.docId,
-        fullMetadata: JSON.stringify(documentData.metadata),
-        allKeys: Object.keys(documentData),
+      // Extract docId from either root or metadata
+      const docId = documentData.docId || documentData.metadata?.docId;
+      const { pageContent, metadata } = documentData;
+
+      console.log("[LanceDB] Processing document:", {
+        hasPageContent: !!pageContent,
+        docId,
+        metadataKeys: Object.keys(metadata || {})
       });
 
-      const { pageContent, metadata = {}, docId = metadata?.docId } = documentData;
-      
-      // Enhanced validation
-      if (!pageContent || pageContent.length == 0) {
+      if (!pageContent || pageContent.length === 0) {
         console.error("[LanceDB] Missing or empty pageContent");
         return false;
       }
