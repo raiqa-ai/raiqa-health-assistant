@@ -2,9 +2,20 @@ const path = require('path');
 const fs = require('fs').promises;
 const { v4 } = require("uuid");
 const { PDFLoader } = require("./PDFLoader");
-const { createdDate } = require("../../collector/utils/files");
-const { tokenizeString } = require("../../collector/utils/tokenizer");
-const { default: slugify } = require("slugify");
+
+// These functions need to be moved to shared utilities
+function createdDate(filePath) {
+  try {
+    const stats = fs.statSync(filePath);
+    return stats.birthtime;
+  } catch (e) {
+    return new Date().toISOString();
+  }
+}
+
+function tokenizeString(str) {
+  return str.split(/\s+/);
+}
 
 async function extractPdfText(filePath) {
   const pdfLoader = new PDFLoader(filePath, {
