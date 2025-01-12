@@ -11,7 +11,7 @@ const {
   isWithin,
 } = require("../utils/files");
 const RESERVED_FILES = ["__HOTDIR__.md"];
-const { processPdfDocument } = require('../../shared/pdf/pdfProcessor.cjs');
+const { processPdfDocument } = require('../utils/pdf/pdfProcessor.cjs');
 
 async function processSingleFile(targetFilename, options = {}) {
   const fullFilePath = path.resolve(
