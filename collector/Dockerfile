@@ -20,46 +20,28 @@ RUN mkdir -p collector shared/pdf && \
 
 # Copy shared files first
 COPY shared /app/shared/
+RUN echo "Shared files copied to /app/shared/"
+RUN ls -la /app/shared/
 
 # Copy collector files
 COPY collector /app/collector/
+RUN echo "Collector files copied to /app/collector/"
+RUN ls -la /app/collector/
 
 # Set working directory for collector
 WORKDIR /app/collector
 
 # Install dependencies
+RUN echo "Installing dependencies..."
 RUN yarn install --frozen-lockfile
+RUN echo "Dependencies installed"
 
-# Create startup script that handles directory creation and permissions
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "=== System Information ==="\n\
-date\n\
-id\n\
-echo\n\
-\n\
-echo "=== Directory Structure ==="\n\
-ls -la /app/collector/hotdir\n\
-ls -la /app/collector/hotdir/documents\n\
-ls -la /app/collector/hotdir/vector-cache\n\
-ls -la /app/collector/hotdir/lancedb\n\
-ls -la /app/collector/hotdir/comkey\n\
-echo\n\
-\n\
-echo "=== File Permissions ==="\n\
-ls -la /app/collector/hotdir/raiqaAssistant.db\n\
-echo\n\
-\n\
-echo "=== Environment Variables ==="\n\
-env | grep -v "PASSWORD\\|KEY\\|SECRET"\n\
-echo\n\
-\n\
-echo "=== Starting Application ==="\n\
-exec yarn start\n\
-' > /startup.sh
-
-RUN chmod +x /startup.sh
+# Create startup script
+RUN echo '#!/bin/bash' > /startup.sh && \
+    echo 'echo "Starting collector service..."' >> /startup.sh && \
+    echo 'cd /app/collector' >> /startup.sh && \
+    echo 'NODE_ENV=production node index.js' >> /startup.sh && \
+    chmod +x /startup.sh
 
 USER raiqaAssistant
 ENV NODE_ENV=production
