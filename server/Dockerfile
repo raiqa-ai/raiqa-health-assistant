@@ -18,8 +18,11 @@ WORKDIR /app
 RUN mkdir -p server shared/pdf && \
     chown -R raiqaAssistant:raiqaAssistant /app
 
-# Copy all files
-COPY . /app/
+# Copy shared files first
+COPY shared /app/shared/
+
+# Copy server files
+COPY server /app/server/
 
 # Set working directory for server
 WORKDIR /app/server

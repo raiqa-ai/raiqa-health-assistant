@@ -18,8 +18,11 @@ WORKDIR /app
 RUN mkdir -p collector shared/pdf && \
     chown -R raiqaAssistant:raiqaAssistant /app
 
-# Copy application files
-COPY . /app/collector/
+# Copy shared files first
+COPY shared /app/shared/
+
+# Copy collector files
+COPY collector /app/collector/
 
 # Set working directory for collector
 WORKDIR /app/collector

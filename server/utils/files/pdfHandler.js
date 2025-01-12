@@ -1,6 +1,6 @@
 const multer = require("multer");
 const { fileUploadStorage } = require('./storageConfigs');
-const { extractPdfText } = require('../../../shared/pdf/pdfProcessor');
+const { extractPdfText } = require('../../../shared/pdf/pdfProcessor.cjs');
 
 function handlePdfUpload(request, response, next) {
   const upload = multer({ 

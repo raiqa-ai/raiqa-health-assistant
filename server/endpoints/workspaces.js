@@ -36,7 +36,7 @@ const { getTTSProvider } = require("../utils/TextToSpeech");
 const { WorkspaceThread } = require("../models/workspaceThread");
 const truncate = require("truncate");
 const { purgeDocument } = require("../utils/files/purgeDocument");
-const { processPdfDocument } = require('../../shared/pdf/pdfProcessor');
+const { processPdfDocument } = require('../../shared/pdf/pdfProcessor.cjs');
 
 function workspaceEndpoints(app) {
   if (!app) return;

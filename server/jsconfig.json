@@ -9,6 +9,6 @@
     "./utils/**/*",
     "./swagger/**/*",
     "index.js"
-, "../shared/pdf/pdfProcessor.js"  ],
+, "../shared/pdf/pdfProcessor.cjs"  ],
   "exclude": ["node_modules", "storage"]
 }
