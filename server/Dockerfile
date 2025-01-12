@@ -15,11 +15,8 @@ RUN groupadd -r raiqaAssistant && \
 WORKDIR /app
 
 # Create necessary directories
-RUN mkdir -p server shared/pdf && \
+RUN mkdir -p server && \
     chown -R raiqaAssistant:raiqaAssistant /app
-
-# Copy shared files first
-COPY shared /app/shared/
 
 # Copy server files
 COPY server /app/server/
