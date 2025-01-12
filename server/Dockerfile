@@ -12,15 +12,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
 RUN groupadd -r raiqaAssistant && \
     useradd -r -g raiqaAssistant -d /app raiqaAssistant
 
-# Create directory structure
-RUN mkdir -p /app/shared/pdf /app/server && \
-    chown -R raiqaAssistant:raiqaAssistant /app
-
 WORKDIR /app
 
-# Copy all files
-COPY . .
+# Create necessary directories
+RUN mkdir -p server shared/pdf && \
+    chown -R raiqaAssistant:raiqaAssistant /app
 
+# Copy all files
+COPY . /app/
+
+# Set working directory for server
 WORKDIR /app/server
 
 # Install dependencies
