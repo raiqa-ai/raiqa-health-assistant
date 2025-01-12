@@ -56,3 +56,7 @@ USER raiqaAssistant
 ENV NODE_ENV=production
 
 CMD ["/startup.sh"]
+
+# After copying shared files
+RUN chown -R raiqaAssistant:raiqaAssistant /app/shared && \
+    chmod -R 755 /app/shared

@@ -3,8 +3,9 @@ const fs = require('fs');
 console.log('Attempting to require uuid...');
 const { v4 } = require("uuid");
 console.log('UUID loaded successfully');
+console.log('Current directory:', __dirname);
 console.log('Attempting to require PDFLoader...');
-const { PDFLoader } = require("./PDFLoader");
+const PDFLoader = require("./PDFLoader");
 console.log('PDFLoader loaded successfully');
 
 // These functions need to be moved to shared utilities

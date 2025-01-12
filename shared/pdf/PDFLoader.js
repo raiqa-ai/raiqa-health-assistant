@@ -1,4 +1,6 @@
+console.log('PDFLoader module loading...');
 const fs = require("fs").promises;
+console.log('fs.promises loaded successfully');
 
 class PDFLoader {
   constructor(filePath, { splitPages = true } = {}) {
