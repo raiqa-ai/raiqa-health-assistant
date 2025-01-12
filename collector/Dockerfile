@@ -22,6 +22,10 @@ RUN mkdir -p collector shared/pdf && \
 COPY shared /app/shared/
 RUN echo "Shared files copied to /app/shared/"
 RUN ls -la /app/shared/
+RUN echo "Contents of /app/shared/pdf:"
+RUN ls -la /app/shared/pdf/
+RUN echo "Contents of PDFLoader.js:"
+RUN cat /app/shared/pdf/PDFLoader.js || echo "PDFLoader.js not found!"
 
 # Copy collector files
 COPY collector /app/collector/
@@ -35,6 +39,11 @@ WORKDIR /app/collector
 RUN echo "Installing dependencies..."
 RUN yarn install --frozen-lockfile
 RUN echo "Dependencies installed"
+
+# After yarn install
+RUN echo "Checking node_modules:"
+RUN ls -la node_modules/uuid || echo "uuid module not found!"
+RUN ls -la node_modules/pdf-parse || echo "pdf-parse module not found!"
 
 # Create startup script
 RUN echo '#!/bin/bash' > /startup.sh && \
